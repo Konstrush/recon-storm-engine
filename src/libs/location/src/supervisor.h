@@ -50,6 +50,8 @@ class Supervisor
 
     // Check for free position
     bool CheckPosition(float x, float y, float z, Character *c) const;
+    // Check for free locator
+    bool CheckPositionWithRadius(float x, float y, float z, float locRad, float chrRad) const;
     // Find characters by radius
     std::vector<FindCharacter> FindCharacters(Character *chr,
                                               float radius, float angTest = 0.0f, float nearPlane = 0.4f,

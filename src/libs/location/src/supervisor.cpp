@@ -289,7 +289,28 @@ bool Supervisor::CheckPosition(float x, float y, float z, Character *c) const
     }
     return true;
 }
+//HardCoffee Check for free locator if locator radius != 1.0
+bool Supervisor::CheckPositionWithRadius(float x, float y, float z, float locRad, float chrRad) const
+{
+    for (size_t i = 0; i < character.size(); i++)
+    {
+        if (character[i].c == nullptr)
+            continue;
+        const auto dx = x - character[i].c->curPos.x;
+        const auto dy = y - character[i].c->curPos.y;
+        const auto dz = z - character[i].c->curPos.z;
 
+        auto r = locRad + character[i].c->radius * chrRad;
+        auto d = dx * dx + dz * dz;
+        if (d >= r * r)
+            continue;
+        if (y > character[i].c->curPos.y + character[i].c->height)
+            continue;
+
+        return false;
+    }
+    return true;
+}
 // Find characters by radius
 std::vector<Supervisor::FindCharacter> Supervisor::FindCharacters(Character *chr,
                                 float radius, float angTest, float nearPlane, float ax, bool isSort,

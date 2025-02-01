@@ -447,6 +447,13 @@ uint64_t Location::ProcessMessage(MESSAGE &message)
     case MSG_LOCATION_VIEWSTATEBARS:
         bDrawBars = message.Long() != 0;
         return 1;
+    case MSG_LOCATION_ISLOCATORFREE:
+        ax = message.Float(); // x
+        ay = message.Float(); // y
+        az = message.Float(); // z
+        u0 = message.Float(); // character radius multiplier
+        v0 = message.Float(); // locator radius multiplier
+        return supervisor.CheckPositionWithRadius(ax, ay, az, u0, v0);
     }
     return 0;
 }

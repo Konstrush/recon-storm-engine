@@ -129,6 +129,7 @@
 #define MSG_LOCATION_CLRCHRPOSITIONS 30154 // "l" delete positions to restore
 #define MSG_LOCATION_EX_MSG 30155          // "ls" extended s command, ...
 #define MSG_LOCATION_VIEWSTATEBARS 30156   // "ll" display of enemy state (HP, energy) <-- ugeen 05.24.12
+#define MSG_LOCATION_ISLOCATORFREE 30157 //"lfffff" checks if there are characters that interact with a locator (it takes locator radius)
 // Debug
 // "lsffl" show a group of locators in the form of spheres with a scaling factor of the radius,
 // distance of visibility of marks, with colors
