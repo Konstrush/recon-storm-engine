@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <tuple>
+#include <random>
 
 #include "data.h"
 #include "message.h"
@@ -266,6 +267,9 @@ class COMPILER : public VIRTUAL_COMPILER
 
     // printout script functions usage
     void PrintoutUsage();
+
+    std::mt19937 mtRandom;
+    int32_t mtRand(int32_t n);
 
 private:
     [[nodiscard]] std::filesystem::path GetSegmentCachePath(const SEGMENT_DESC &segment) const;

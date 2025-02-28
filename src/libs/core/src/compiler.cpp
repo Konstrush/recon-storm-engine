@@ -125,6 +125,7 @@ COMPILER::COMPILER()
     SStack.SetVCompiler(this);
     VarTab.SetVCompiler(this);
     srand(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
+    mtRandom.seed(duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count());
 
     DebugTraceFileName[0] = 0;
 
@@ -8024,4 +8025,10 @@ void STRING_CODEC::VariableChanged()
 #ifdef _WIN32 // S_DEBUG
     CDebug->SetTraceMode(TMODE_MAKESTEP);
 #endif
+}
+
+int32_t COMPILER::mtRand(int32_t n)
+{
+    std::uniform_int_distribution<int32_t> dist(0, n);
+    return dist(mtRandom);
 }

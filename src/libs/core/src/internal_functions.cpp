@@ -113,40 +113,110 @@ enum FUNCTION_CODE
     FUNC_CHECKFUNCTION,
     FUNC_GETENGINEVERSION,
     FUNC_SORT,
+	FUNC_IDRAND
 };
 
-INTFUNCDESC IntFuncTable[] = {
-    1, "Rand", VAR_INTEGER, 0, "frnd", VAR_FLOAT, 1, "CreateClass", VAR_OBJECT, 2, "CreateEntity", VAR_INTEGER, 1,
-    "DeleteClass", TVOID, 3, "SetEventHandler", TVOID, 0, "ExitProgram", TVOID, 0, "GetEventData", UNKNOWN,
+INTFUNCDESC IntFuncTable[] =
+{
+    1, "Rand", VAR_INTEGER,
+	0, "frnd", VAR_FLOAT,
+	1, "CreateClass", VAR_OBJECT,
+	2, "CreateEntity", VAR_INTEGER,
+	1, "DeleteClass", TVOID,
+	3, "SetEventHandler", TVOID,
+	0, "ExitProgram", TVOID,
+	0, "GetEventData", UNKNOWN,
     // 1,"Execute",TVOID,
-    0, "Stop", TVOID, 0, "SendMessage", VAR_PTR, 1, "LoadSegment", VAR_INTEGER, 1, "UnloadSegment", TVOID, 1, "Trace",
-    TVOID, 1, "MakeInt", VAR_INTEGER, 1, "MakeFloat", VAR_FLOAT,
+    0, "Stop", TVOID,
+	0, "SendMessage", VAR_PTR,
+	1, "LoadSegment", VAR_INTEGER,
+	1, "UnloadSegment", TVOID,
+	1, "Trace", TVOID,
+	1, "MakeInt", VAR_INTEGER,
+	1, "MakeFloat", VAR_FLOAT,
     // 2,"LayerCreate",TVOID,
     // 1,"LayerDelete",TVOID,
-    1, "LayerDeleteContent", TVOID, 1, "LayerSetRealize", TVOID, 1, "LayerSetExecute", TVOID, 2, "LayerSetMessages",
-    TVOID, 3, "LayerAddObject", TVOID, 2, "LayerDelObject", TVOID, 2, "LayerFreeze", TVOID, 1, "abs", UNKNOWN, 1,
-    "sqrt", VAR_FLOAT, 1, "sqr", VAR_FLOAT, 1, "sin", VAR_FLOAT, 1, "cos", VAR_FLOAT, 1, "tan", VAR_FLOAT, 1, "atan",
-    VAR_FLOAT, 2, "atan2", VAR_FLOAT, 1, "asin", VAR_FLOAT, 1, "acos", VAR_FLOAT, 2, "DeleteAttribute", TVOID, 1,
-    "SegmentIsLoaded", VAR_INTEGER, 1, "GetAttributesNum", VAR_INTEGER, 2, "GetAttributeN", VAR_AREFERENCE, 1,
-    "GetAttributeName", VAR_STRING, 2, "DelEventHandler", TVOID, 1, "EntityUpdate", TVOID, 1, "IsEntity", VAR_INTEGER,
-    1, "DumpAttributes", TVOID, 1, "sti", VAR_INTEGER, 1, "stf", VAR_FLOAT, 2, "CheckAttribute", VAR_INTEGER, 4, "argb",
-    VAR_INTEGER, 0, "DeleteEntities", TVOID, 0, "ClearEvents", TVOID, 1, "SaveEngineState", TVOID, 1, "LoadEngineState",
-    TVOID, 0, "Event", TVOID, 0, "PostEvent", TVOID, 2, "fts", VAR_STRING, 0, "ClearPostEvents", TVOID, 2,
-    "SetArraySize", TVOID, 1, "GetAttributeValue", VAR_STRING, 1, "Vartype", VAR_STRING, 0, "Breakpoint", TVOID, 2,
-    "Pow", VAR_FLOAT, 2, "CopyAttributes", TVOID,
+    1, "LayerDeleteContent", TVOID,
+	1, "LayerSetRealize", TVOID,
+	1, "LayerSetExecute", TVOID,
+	2, "LayerSetMessages", TVOID,
+	3, "LayerAddObject", TVOID,
+	2, "LayerDelObject", TVOID,
+	2, "LayerFreeze", TVOID,
+	1, "abs", UNKNOWN,
+	1, "sqrt", VAR_FLOAT,
+	1, "sqr", VAR_FLOAT,
+	1, "sin", VAR_FLOAT,
+	1, "cos", VAR_FLOAT,
+	1, "tan", VAR_FLOAT,
+	1, "atan", VAR_FLOAT,
+	2, "atan2", VAR_FLOAT,
+	1, "asin", VAR_FLOAT,
+	1, "acos", VAR_FLOAT,
+	2, "DeleteAttribute", TVOID,
+	1, "SegmentIsLoaded", VAR_INTEGER,
+	1, "GetAttributesNum", VAR_INTEGER,
+	2, "GetAttributeN", VAR_AREFERENCE,
+	1, "GetAttributeName", VAR_STRING,
+	2, "DelEventHandler", TVOID,
+	1, "EntityUpdate", TVOID,
+	1, "IsEntity", VAR_INTEGER,
+    1, "DumpAttributes", TVOID,
+	1, "sti", VAR_INTEGER,
+	1, "stf", VAR_FLOAT,
+	2, "CheckAttribute", VAR_INTEGER,
+	4, "argb", VAR_INTEGER,
+	0, "DeleteEntities", TVOID,
+	0, "ClearEvents", TVOID,
+	1, "SaveEngineState", TVOID,
+	1, "LoadEngineState", TVOID,
+	0, "Event", TVOID,
+	0, "PostEvent", TVOID,
+	2, "fts", VAR_STRING,
+	0, "ClearPostEvents", TVOID,
+	2, "SetArraySize", TVOID,
+	1, "GetAttributeValue", VAR_STRING,
+	1, "Vartype", VAR_STRING,
+	0, "Breakpoint", TVOID,
+	2, "Pow", VAR_FLOAT,
+	2, "CopyAttributes", TVOID,
     // 2,"GetEntityPointer",VAR_INTEGER,
     // 1,"GetEntityNext",VAR_INTEGER,
     // 1,"GetEntityName",VAR_STRING,
-    3, "strcut", VAR_STRING, 3, "findSubStr", VAR_STRING, 1, "ClearRef", TVOID, 1, "strlen", VAR_INTEGER, 0,
-    "GetDeltaTime", VAR_INTEGER, 0, "EventsBreak", TVOID, 2, "shl", VAR_INTEGER, 2, "shr", VAR_INTEGER, 2, "and",
-    VAR_INTEGER, 2, "or", VAR_INTEGER, 1, "DeleteEntitiesByType", TVOID, 1, "CreateControl", VAR_INTEGER, 1,
-    "DeleteControl", TVOID, 2, "MapControl", TVOID, 2, "SetControlFlags", TVOID, 1, "ClearEntityAP", TVOID, 1,
-    "GetArraySize", VAR_INTEGER, 0, "GetTargetPlatform", VAR_STRING, 2, "GetEntity", VAR_INTEGER, 2, "FindEntity",
-    VAR_INTEGER, 1, "FindEntityNext", VAR_INTEGER, 2, "GetSymbol", VAR_STRING, 2, "IsDigit", VAR_INTEGER, 2,
-    "SaveVariable", VAR_INTEGER, 2, "LoadVariable", VAR_INTEGER, 2, "SetControlTreshold", TVOID, 2, "LockControl",
-    TVOID, 1, "TestRef", VAR_INTEGER, 1, "SetTimeScale", TVOID, 1, "CheckFunction", VAR_INTEGER, 0, "GetEngineVersion",
-    VAR_INTEGER, 1, "sort", TVOID};
-
+    3, "strcut", VAR_STRING,
+	3, "findSubStr", VAR_STRING,
+	1, "ClearRef", TVOID,
+	1, "strlen", VAR_INTEGER,
+	0, "GetDeltaTime", VAR_INTEGER,
+	0, "EventsBreak", TVOID,
+	2, "shl", VAR_INTEGER,
+	2, "shr", VAR_INTEGER,
+	2, "and", VAR_INTEGER,
+	2, "or", VAR_INTEGER,
+	1, "DeleteEntitiesByType", TVOID,
+	1, "CreateControl", VAR_INTEGER,
+	1, "DeleteControl", TVOID,
+	2, "MapControl", TVOID,
+	2, "SetControlFlags", TVOID,
+	1, "ClearEntityAP", TVOID,
+	1, "GetArraySize", VAR_INTEGER,
+	0, "GetTargetPlatform", VAR_STRING,
+	2, "GetEntity", VAR_INTEGER,
+	2, "FindEntity", VAR_INTEGER,
+	1, "FindEntityNext", VAR_INTEGER, 
+	2, "GetSymbol", VAR_STRING,
+	2, "IsDigit", VAR_INTEGER,
+	2, "SaveVariable", VAR_INTEGER,
+	2, "LoadVariable", VAR_INTEGER,
+	2, "SetControlTreshold", TVOID,
+	2, "LockControl", TVOID,
+	1, "TestRef", VAR_INTEGER,
+	1, "SetTimeScale", TVOID,
+	1, "CheckFunction", VAR_INTEGER,
+	0, "GetEngineVersion", VAR_INTEGER,
+	1, "sort", TVOID,
+	2, "id_Rand",VAR_INTEGER
+};
 /*
 char * FuncNameTable[]=
 {
@@ -1563,6 +1633,65 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         pVResult = pV;
         return pV;
     }
+	
+    case FUNC_IDRAND: {
+        pV = SStack.Pop();
+        if (!pV)
+        {
+            SetError(INVALID_FA);
+            break;
+        }
+        pV2 = SStack.Pop();
+        if (!pV2)
+        {
+            SetError(INVALID_FA);
+            break;
+        }
+        if (pV->GetType() != VAR_INTEGER)
+        {
+            SetError(INVALID_FA);
+            break;
+        }
+        pV->Get(TempLong1); //max rand
+        switch (pV2->GetType())
+        {
+            case VAR_STRING: // string id
+                pV2->Get(pChar);
+                if (pChar == nullptr)
+                    return nullptr;
+                TempFloat1 = 0.0;
+                for (int i = 0; i < strlen(pChar); i++)
+                {
+                    TempFloat1 += cos(static_cast<int>(pChar[i]));
+                }
+                TempFloat1 *= 10000000;
+                TempLong2 = 1 + static_cast<int32_t>(TempFloat1);
+                break;
+            case VAR_INTEGER: // int id //that's a direct seed
+                pV2->Get(TempLong2);
+                break;
+            default:
+                SetError(INVALID_FA);
+                return nullptr;
+        }
+        //core.Trace("TempLong %d", TempLong2);
+        mtRandom.seed(TempLong2);
+
+        bool neg = false;
+        if (TempLong1 < 0)
+        {
+            TempLong1 = -TempLong1;
+            neg = true;
+        }
+
+        TempLong2 = mtRand(TempLong1);
+        pV = SStack.Push();
+        pV->Set(neg ? -TempLong2 : TempLong2);
+        pVResult = pV;
+        //mtRandom.seed(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+        return pV;
+    }
+
         // create entity
     case FUNC_CREATE_ENTITY:
 
