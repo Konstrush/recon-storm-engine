@@ -1643,7 +1643,36 @@ uint32_t _StringFromKey(VS_STACK *pS)
             fileNotFound = false;
             break;
         }
+        if (dirNames[i] == "dialogs\\")
+        {
+            namespace fs = std::filesystem;
+            std::filesystem::path path = fs::u8path(temp_character + dirNames[i]);
+            try
+            {
+                for (const auto &entry : fs::recursive_directory_iterator(path))
+                {
+                    if (fs::is_regular_file(entry) && entry.path().filename() == fileName && fio->_FileOrDirectoryExists(entry.path().string().c_str()))
+                    {
+                        size_t pos = entry.path().string().find(dirNames[i]);
+                        if (pos != std::string::npos)
+                        {
+                            fileName = entry.path().string().substr(pos);
+                            fileNotFound = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (const fs::filesystem_error &e)
+            {
+                core.Trace("[StringFromKey] Error: accessing '%s'!", e.code().message().c_str());
+                return IFUNCRESULT_OK;
+            }
+        }
+        if (!fileNotFound)
+            break;
     }
+
     if (fileNotFound)
     {
         core.Trace("[StringFromKey] Error: localization file '%s' from key '%s' not found!",
