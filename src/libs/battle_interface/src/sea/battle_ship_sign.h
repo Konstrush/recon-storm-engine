@@ -112,6 +112,14 @@ class BIShipIcon
     uint32_t m_dwShipNCols;
     uint32_t m_dwShipNRows;
 
+    struct TextureDescr
+    {
+        std::string sFileName;
+        int32_t nTextureID;
+    };
+
+    std::vector<TextureDescr> m_aTexture;
+
     struct ShipDescr
     {
         int32_t nCharacterIndex;
@@ -123,6 +131,7 @@ class BIShipIcon
         FRECT rUV;
         std::string sShipName;
         int32_t nShipClass;
+        int32_t nTextureNum;
     } m_Ship[MAX_SHIP_QUANTITY];
 
     int32_t m_nShipQuantity;

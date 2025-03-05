@@ -4,6 +4,7 @@
 
 #include "script_libriary.h"
 #include "../string_service.h"
+#include <unordered_set>
 
 //-----------SDEVICE-----------
 class STRSERVICE : public VSTRSERVICE
@@ -33,6 +34,9 @@ class STRSERVICE : public VSTRSERVICE
     void SetLanguage(const char *sLanguage) override;
     char *GetLanguage() override;
 
+    void LoadCommonIniFile(const std::string &sFileName) override;
+    void LoadCommonIniFileImpl(const std::string &sFileName);
+
     char *GetString(const char *stringName, char *sBuffer = nullptr, std::size_t bufferSize = 0) override;
     int32_t GetStringNum(const char *stringName) override;
     char *GetString(int32_t strNum) override;
@@ -60,12 +64,14 @@ class STRSERVICE : public VSTRSERVICE
     char *m_sLanguageDir;
 
     int32_t m_nStringQuantity;
-    char **m_psStrName;
-    char **m_psString;
+    std::vector<char *> m_psStrName;
+    std::vector<char *> m_psString;
 
     UsersStringBlock *m_pUsersBlocks;
 
     int32_t m_nDialogSourceFile;
+    std::vector<std::string> m_sFilesToReload;
+    std::unordered_set<std::string> m_sFilesLoaded;
 };
 
 class SCRIPT_INTERFACE_FUNCTIONS : public SCRIPT_LIBRIARY

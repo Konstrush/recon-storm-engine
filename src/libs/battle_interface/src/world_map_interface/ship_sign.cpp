@@ -31,6 +31,13 @@ int32_t WMShipIcon::CalculateSignQuantity()
                 m_Sign[n].fLeftState = pA->GetAttributeAsFloat("leftprogress", 0.f);
                 m_Sign[n].fRightState = pA->GetAttributeAsFloat("rightprogress", 0.f);
                 m_Sign[n].fStarProgress = pA->GetAttributeAsFloat("starprogress", 0.f);
+
+                const char *texturePath = pA->GetAttribute("texturepath");
+                if (texturePath)
+                {
+                    m_Sign[n].nTextureID = m_pRS->TextureCreate(texturePath);
+                }
+                
                 FULLRECT(m_Sign[n].rFaceUV);
                 BIUtils::ReadRectFromAttr(pA, "faceuv", m_Sign[n].rFaceUV, m_Sign[n].rFaceUV);
                 const char *attr = pA->GetAttribute("text");

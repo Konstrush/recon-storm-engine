@@ -58,14 +58,19 @@ void BISignIcon::Draw()
         const int32_t nStartI = 0;
 
         // sign face
-        if (m_nSignFaceSquareQ > 0)
+        for (int i = 0; i < m_nSignFaceSquareQ; i++)
         {
-            m_pRS->TextureSet(0, m_nSignFaceTextureID);
-            m_pRS->DrawBuffer(m_nVBufID, sizeof(BI_COLOR_VERTEX), m_nIBufID, nStartV, m_nSignFaceSquareQ * 4, nStartI,
-                              m_nSignFaceSquareQ * 2, "battle_colorRectangle");
-        }
-        nStartV += m_nSignFaceSquareQ * 4;
+            int32_t textureID = m_nSignFaceTextureID;
+            if (m_Sign[i].nTextureID > 0)
+            {
+                textureID = m_Sign[i].nTextureID;
+            }
+            m_pRS->TextureSet(0, textureID);
+            m_pRS->DrawBuffer(m_nVBufID, sizeof(BI_COLOR_VERTEX), m_nIBufID, nStartV, 4, nStartI, 2,
+                              "battle_colorRectangle");
 
+            nStartV += 4;
+        }
         // back
         if (m_nBackSquareQ > 0)
         {
@@ -237,6 +242,7 @@ void BISignIcon::Init(ATTRIBUTES *pRoot, ATTRIBUTES *pA)
 
         for (n = 0; n < MAX_SIGN_QUANTITY; n++)
         {
+            m_Sign[n].nTextureID = -1;
             sprintf_s(param, sizeof(param), "iconoffset%d", n + 1);
             pcTmp = pA->GetAttribute(param);
             if (pcTmp)

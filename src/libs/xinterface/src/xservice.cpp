@@ -7,15 +7,13 @@
 
 #define ERROR_MUL 1.0f
 
-static const char *LISTS_INIFILE = "resource\\ini\\interfaces\\pictures.ini";
+static const char *LISTS_INIFILE = "pictures.ini";
 
 XSERVICE::XSERVICE()
     : m_fWScale(0), m_fHScale(0), m_fWAdd(0), m_fHAdd(0)
 {
     m_dwListQuantity = 0;
     m_dwImageQuantity = 0;
-    m_pList = nullptr;
-    m_pImage = nullptr;
 
     m_pRS = nullptr;
 }
@@ -26,6 +24,8 @@ XSERVICE::~XSERVICE()
 
 void XSERVICE::Init(VDX9RENDER *pRS, int32_t lWidth, int32_t lHeight)
 {
+    m_fWScale = 0;
+    m_fHScale = 0;
     m_pRS = pRS;
 
     // get the size of the output window
@@ -226,18 +226,32 @@ void XSERVICE::GetTextureCutForSize(const char *pcImageListName, const FXYPOINT 
 
 void XSERVICE::LoadAllPicturesInfo()
 {
-    char section[255];
-    char param[255];
+    if (!m_sFilesLoaded.size())
+    {
+        m_dwListQuantity = 0;
+        m_dwImageQuantity = 0;
+        LoadPicturesInfo(LISTS_INIFILE);
+    } 
+}
 
+void XSERVICE::LoadPicturesInfo(const std::string &sIniFileName)
+{
+    if (m_sFilesLoaded.contains(sIniFileName))
+    {
+        return;
+    }
+    m_sFilesLoaded.insert(sIniFileName);
+
+    char section[255];
+    char param[2048];
+    auto oldListSize = m_pList.size();
+    sprintf_s(param, "resource\\ini\\interfaces\\%s", sIniFileName.c_str());
     // initialize ini file
-    auto ini = fio->OpenIniFile(LISTS_INIFILE);
+    auto ini = fio->OpenIniFile(param);
     if (!ini)
     {
         throw std::runtime_error("ini file not found!");
     }
-
-    m_dwListQuantity = 0;
-    m_dwImageQuantity = 0;
 
     // calculate lists quantity
     if (ini->GetSectionName(section, sizeof(section) - 1))
@@ -248,19 +262,16 @@ void XSERVICE::LoadAllPicturesInfo()
         } while (ini->GetSectionNameNext(section, sizeof(section) - 1));
     }
     // create list pointers array
-    if (m_dwListQuantity > 0)
+
+    if (m_dwListQuantity > m_pList.size())
     {
-        m_pList = new IMAGELISTDESCR[m_dwListQuantity];
-        if (m_pList == nullptr)
-        {
-            throw std::runtime_error("memory allocate error");
-        }
+        m_pList.resize(m_dwListQuantity);
     }
 
     // fill lists
     if (ini->GetSectionName(section, sizeof(section) - 1))
     {
-        for (auto i = 0; true; i++)
+        for (auto i = oldListSize; true; i++)
         {
             m_pList[i].textureQuantity = 0;
             m_pList[i].textureID = -1L;
@@ -287,15 +298,8 @@ void XSERVICE::LoadAllPicturesInfo()
                 } while (ini->ReadStringNext(section, "picture", param, sizeof(param) - 1));
 
             // resize image list
-            auto *const oldpImage = m_pImage;
-            m_pImage = new PICTUREDESCR[m_dwImageQuantity + m_pList[i].pictureQuantity];
-            if (m_pImage == nullptr)
-                throw std::runtime_error("allocate memory error");
-            if (oldpImage != nullptr)
-            {
-                memcpy(m_pImage, oldpImage, m_dwImageQuantity * sizeof(PICTUREDESCR));
-                delete oldpImage;
-            }
+            m_pImage.resize(m_dwImageQuantity + m_pList[i].pictureQuantity);
+
             m_dwImageQuantity += m_pList[i].pictureQuantity;
 
             // set pictures
@@ -327,29 +331,21 @@ void XSERVICE::LoadAllPicturesInfo()
 
 void XSERVICE::ReleaseAll()
 {
-    if (m_pList != nullptr)
+
+    for (auto i = 0; i < m_dwListQuantity; i++)
     {
-        for (auto i = 0; i < m_dwListQuantity; i++)
-        {
-            if (m_pList[i].textureQuantity != 0)
-                m_pRS->TextureRelease(m_pList[i].textureID);
+        if (m_pList[i].textureQuantity != 0)
+            m_pRS->TextureRelease(m_pList[i].textureID);
 
-            delete m_pList[i].sImageListName;
+        delete m_pList[i].sImageListName;
 
-            delete m_pList[i].sTextureName;
-        }
-
-        delete m_pList;
+        delete m_pList[i].sTextureName;
     }
 
-    if (m_pImage != nullptr)
-    {
-        for (auto i = 0; i < m_dwImageQuantity; i++)
-        {
-            delete m_pImage[i].sPictureName;
-        }
 
-        delete m_pImage;
+    for (auto i = 0; i < m_dwImageQuantity; i++)
+    {
+        delete m_pImage[i].sPictureName;
     }
 
     m_dwListQuantity = 0;

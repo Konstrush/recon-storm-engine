@@ -154,13 +154,6 @@ XINTERFACE::~XINTERFACE()
         pRenderService->Release(m_pPrevTexture);
     m_pTexture = m_pPrevTexture = nullptr;
 
-    if (pPictureService != nullptr)
-    {
-        pPictureService->ReleaseAll();
-        delete pPictureService;
-        pPictureService = nullptr;
-    }
-
     STORM_DELETE(pQuestService);
     STORM_DELETE(m_pEditor);
 
@@ -199,10 +192,10 @@ void XINTERFACE::SetDevice()
     LoadIni();
 
     // Create pictures and string lists service
-    pPictureService = new XSERVICE;
-    if (pPictureService == nullptr)
+    pPictureService = static_cast<VXSERVICE *>(core.GetService("XSERVICE"));
+    if (!pStringService)
     {
-        throw std::runtime_error("Not memory allocate");
+        throw std::runtime_error("No service: XSERVICE");
     }
     pPictureService->Init(pRenderService, dwScreenWidth, dwScreenHeight);
 
@@ -1051,6 +1044,20 @@ uint64_t XINTERFACE::ProcessMessage(MESSAGE &message)
                    pcPicTextureName, pcPicGroupName, pcPicImageName, nPicWidth, nPicHeight);
     }
     break;
+
+    case MSG_INTERFACE_LOAD_PICTURES_INI_FILE: {
+        const std::string &tempString = message.String();
+
+        pPictureService->LoadPicturesInfo(tempString.c_str());
+        break;
+    }
+
+    case MSG_INTERFACE_LOAD_STRINGS_INI_FILE: {
+        const std::string &tempString = message.String();
+
+        pStringService->LoadCommonIniFile(tempString);
+        break;
+    }
     }
 
     return 0;
