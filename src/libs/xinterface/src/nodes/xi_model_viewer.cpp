@@ -675,6 +675,30 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
             {
                 HandleMouseWheel(-1);
             }
+            else if (comName == "v_translate")
+            {
+                float v_tcoef = message.Float();
+                if (v_tcoef > 1.0)
+                    v_tcoef = 1.0;
+                if (v_tcoef < 0)
+                    v_tcoef = 0.0;
+
+                float _modelHeight = 0;
+                if (m_bShipModelView)
+                {
+                    auto s = static_cast<SHIP *>(core.GetEntityPointer(m_shipId));
+                    _modelHeight = s->GetRealBoxsize().y;
+                }
+                else
+                {
+                    auto m = static_cast<MODELR *>(core.GetEntityPointer(m_modelId));
+                    GEOS::INFO gi;
+                    m->root->geo->GetInfo(gi);
+                    _modelHeight = gi.boxcenter.y;
+                }
+
+                centerY = _modelHeight * v_tcoef;
+            }
         }
         break;
         case 5: // Move the picture to a new position
