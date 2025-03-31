@@ -560,17 +560,15 @@ void SHIP::ExecuteForMV(uint32_t DeltaTime)
         fRockingAZ = pARocking->GetAttributeAsFloat("az", 1.0f);
     }
 
-    auto fDeltaTime = Min(0.1f, static_cast<float>(DeltaTime) * 0.001f);
-
     if (!bMounted)
         return;
     // CalculateImmersion
     State.fShipImmersion = 0.0f;
+    CalculateImmersion();
+    Move(DeltaTime, false);
 
     vPos = State.vPos;
     vAng = State.vAng;
-
-    State.vAng = ShipRocking(DELTA_TIME(DeltaTime));
 
     mRoot = CMatrix(vAng.x, vAng.y, vAng.z, vPos.x + fXOffset,
                     vPos.y - State.fShipImmersion - SP.fWaterLine, vPos.z + fZOffset);
@@ -1258,22 +1256,40 @@ uint64_t SHIP::ProcessMessage(MESSAGE &message)
         break;
     case MSG_SHIP_INIT_FOR_MV: {
         SetACharacter(message.AttributePointer());
-        
+
         auto _pAShip = message.AttributePointer();
         Assert(_pAShip);
         pAShip = _pAShip;
 
         model_id = message.EntityID();
-        auto sea_id = message.EntityID();
+        bool _bSeaLoad = false;
+        entid_t sea_id;
+        if (message.GetCurrentFormatType() == 'i')
+        {
+            _bSeaLoad = true;
+            sea_id = message.EntityID();
+        }
+        State.vPos = 0.0f;
+        State.vRotate = 0.0f;
         LoadShipParameters();
 
-        if (sea_id != -1)
+        if (_bSeaLoad && sea_id)
         {
             pSea = static_cast<SEA_BASE *>(core.GetEntityPointer(sea_id));
             core.AddToLayer(SEA_REFLECTION2, GetId(), 100);
             core.Send_Message(sea_id, "lic", MSG_SHIP_CREATE, GetId(),
                               CVECTOR(State.vPos.x, State.vPos.y, State.vPos.z));
             State.vPos.y = pSea->WaveXZ(State.vPos.x, State.vPos.z);
+
+            // add to ship tracks
+            if (message.GetCurrentFormatType() == 'i')
+            {
+                auto eidTmp = message.EntityID();
+
+                auto *pST = static_cast<ShipTracks *>(core.GetEntityPointer(eidTmp));
+                if (pST)
+                    pST->AddShip(this);
+            }
         }
 
         GEOS::INFO ginfo;
@@ -1288,6 +1304,8 @@ uint64_t SHIP::ProcessMessage(MESSAGE &message)
         State.vBoxSize.x = ginfo.boxsize.x;
         State.vBoxSize.y = ginfo.boxsize.y;
         State.vBoxSize.z = ginfo.boxsize.z;
+        State.vSpeed = 0.0f;
+        State.vAng = 0.0f;
 
         SP.fLength = State.vBoxSize.z;
         SP.fWidth = State.vBoxSize.x;

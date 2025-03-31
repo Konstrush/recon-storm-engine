@@ -9,6 +9,9 @@
 #include "../../../rigging/src/vant.h"
 #include "../../../weather/src/sky.h"
 #include "../../../sea/src/sea.h"
+#include "../../../sea_foam/src/seafoam.h"
+#include "../../../sea_foam/src/seafoam.h"
+#include "../../../ship/src/track.h"
 
 
 class INIFILE;
@@ -40,6 +43,7 @@ class CXI_MODELVIEWER : public CINODE
     virtual void ChangeUV(FXYRECT &frNewUV);
     void ChangeColor(uint32_t dwColor);
     void SetPictureSize(int32_t &nWidth, int32_t &nHeight);
+    void CalculateNewViewport(D3DVIEWPORT9 vp, D3DVIEWPORT9 &res_vp);
 
   protected:
     void LoadIni(INIFILE *ini1, const char *name1, INIFILE *ini2, const char *name2) override;
@@ -84,9 +88,13 @@ class CXI_MODELVIEWER : public CINODE
 
     entid_t seaEntId;
     entid_t skyEntId;
+    entid_t seafoamEntId;
+    entid_t shipTrackEntId;
 
     bool m_bRigSetted;
-    bool m_CamIsSetted;
+    bool m_bCamSetted;
+    bool m_bRenderFlags;
+    bool m_bUseSailRotation;
 
     float sensY;
     float sensZ;

@@ -528,7 +528,7 @@ void SAIL::Execute(uint32_t Delta_Time)
     }
 }
 
-void SAIL::ExecuteForMV(uint32_t Delta_Time, float gWindAngle)
+void SAIL::ExecuteForMV(uint32_t Delta_Time, float gWindAngle, bool useSailRotation)
 {
     if (bFirstRun)
     {
@@ -543,7 +543,17 @@ void SAIL::ExecuteForMV(uint32_t Delta_Time, float gWindAngle)
 
     auto fMaxTurnAngl = Delta_Time * TURNSTEPANGL;
     globalWind.ang.x = gWindAngle;
-    globalWind.base = 0.1f / WIND_SPEED_MAX;
+    globalWind.ang.z = cosf(globalWind.ang.x);
+    globalWind.ang.x = sinf(globalWind.ang.x);
+    globalWind.base = 0.2f / WIND_SPEED_MAX;
+
+    if (const auto ei = core.GetEntityId("weather"))
+    {
+        auto wb = static_cast<WEATHER_BASE *>(core.GetEntityPointer(ei));
+        globalWind.base = wb->GetFloat(whf_wind_speed) / WIND_SPEED_MAX;
+        if (globalWind.base > 1.f)
+            globalWind.base = 1.f;
+    }
 
     auto bSailUpdate = false;
     m_nLastUpdate -= Delta_Time;
@@ -559,6 +569,22 @@ void SAIL::ExecuteForMV(uint32_t Delta_Time, float gWindAngle)
 
         uint64_t rtime;
         RDTSC_B(rtime);
+
+        if (useSailRotation)
+        {
+            for (i = 0; i < sailQuantity; i++)
+            {
+                if (gdata[slist[i]->HostNum].bDeleted)
+                    continue;
+                // If the mesh on the sail has changed, then set new indices
+                // slist[i]->GetGrid(pos, perspect);
+                // wind calculation
+                slist[i]->CalculateSailWind();
+                // turn the sail according to need
+                if (slist[i]->ss.turningSail)
+                    slist[i]->TurnSail(fMaxTurnAngl);
+            }
+        }
 
         auto *pv = static_cast<SAILVERTEX *>(RenderService->LockVertexBuffer(sg.vertBuf));
         if (pv)

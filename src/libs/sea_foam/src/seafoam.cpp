@@ -462,26 +462,36 @@ uint64_t SEAFOAM::ProcessMessage(MESSAGE &message)
 
     switch (code)
     {
-    case MSG_SHIP_DELETE: {
-        auto *const attrs = message.AttributePointer();
-        tShipFoamInfo *foamInfo = nullptr;
-        if (attrs)
-            for (auto ship = 0; ship < shipsCount; ship++)
-            {
-                if (attrs == shipFoamInfo[ship].ship->GetACharacter())
+        case MSG_SHIP_DELETE: {
+            auto *const attrs = message.AttributePointer();
+            tShipFoamInfo *foamInfo = nullptr;
+            if (attrs)
+                for (auto ship = 0; ship < shipsCount; ship++)
                 {
-                    shipFoamInfo[ship].enabled = false;
+                    if (attrs == shipFoamInfo[ship].ship->GetACharacter())
+                    {
+                        shipFoamInfo[ship].enabled = false;
 
-                    // shipFoamInfo[ship].carcass[0]->Uninitialize();
-                    // delete shipFoamInfo[ship].carcass[0];
-                    // shipFoamInfo[ship].carcass[1]->Uninitialize();
-                    // delete shipFoamInfo[ship].carcass[1];
+                        // shipFoamInfo[ship].carcass[0]->Uninitialize();
+                        // delete shipFoamInfo[ship].carcass[0];
+                        // shipFoamInfo[ship].carcass[1]->Uninitialize();
+                        // delete shipFoamInfo[ship].carcass[1];
 
-                    return outValue;
+                        return outValue;
+                    }
                 }
-            }
-    }
-    break;
+        }
+        break;
+
+        case MSG_SHIP_INIT_FOR_MV: {
+            auto _seaId = message.EntityID();
+
+            seaID = _seaId;
+            sea = static_cast<SEA_BASE *>(core.GetEntityPointer(_seaId));
+
+            return 1;
+        }
+        break;
     }
 
     return outValue;

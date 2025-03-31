@@ -12,6 +12,7 @@ class ShipTracks : public Entity
     ~ShipTracks() override;
 
     bool Init() override;
+    uint64_t ProcessMessage(MESSAGE &message) override;
 
     void Execute(uint32_t dwDeltaTime);
     void Realize(uint32_t dwDeltaTime);

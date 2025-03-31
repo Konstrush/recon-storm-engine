@@ -22,28 +22,52 @@ CXI_MODELVIEWER::CXI_MODELVIEWER()
     m_dwBlindMin = ARGB(255, 128, 128, 128);
     m_dwBlindMax = ARGB(255, 255, 255, 255);
 
-    m_modelId = -1;
-    seaEntId = -1;
-    skyEntId = -1;
+    m_modelId = invalid_entity;
+
+    m_shipId = invalid_entity;
+    m_ropeId = invalid_entity;
+    m_sailId = invalid_entity;
+    m_flagId = invalid_entity;
+
+    m_vantId = invalid_entity;
+    m_vantLId = invalid_entity;
+    m_vantZId = invalid_entity;
+
+    seaEntId = invalid_entity;
+    skyEntId = invalid_entity;
+    seafoamEntId = invalid_entity;
+    shipTrackEntId = invalid_entity;
+
+    m_bCamSetted = false;
     m_bRigSetted = false;
     m_bShipModelView = false;
     m_fGlobalWinAngle = PI / 6;
+    m_bRenderFlags = true;
+    m_bUseSailRotation = false;
 
     dxAng = 0.015;
     dyAng = 0.015;
     sensY = 1.0;
     sensZ = 1.0;
     xAngMin = 0.01;
+    xAngMax = PI / 3;
+    xAng = PI / 36;
+    yAng = 0.0;
 
     centerX = 0.0;
     centerY = 0.0;
     centerZ = 0.0;
+
+    baseZCamPos = 0.0;
+    ZCamPos = 0.0;
+    camPos = 0.0;
 
     minCamDistanceCoef = 0.3;
     maxCamDistanceCoef = 1.7;
     camZoomCoef = 1.0;
     m_bDrag = false;
     m_pcDragControlName = nullptr;
+    m_pMouseWeel = nullptr;
 
     translateCoef = 0.0;
 }
@@ -89,7 +113,7 @@ void CXI_MODELVIEWER::Draw(bool bSelected, uint32_t Delta_Time)
             m_rs->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, XI_ONETEX_FVF, 2, m_v, sizeof(XI_ONETEX_VERTEX), "iVideo");
         }
 
-        if (m_bDrag && m_pcDragControlName && m_CamIsSetted)
+        if (m_bDrag && m_pcDragControlName && m_bCamSetted)
         {
             CONTROL_STATE cs;
             core.Controls->GetControlState(m_pcDragControlName, cs);
@@ -100,7 +124,7 @@ void CXI_MODELVIEWER::Draw(bool bSelected, uint32_t Delta_Time)
                 HandleMouseMove();
         }
 
-        if (m_CamIsSetted)
+        if (m_bCamSetted)
         {
             if (m_bShipModelView)
             {
@@ -120,33 +144,29 @@ void CXI_MODELVIEWER::DrawShipScene(uint32_t Delta_Time)
 {
     if (m_shipId && m_bRigSetted)
     {
-        auto _ship = static_cast<SHIP *>(core.GetEntityPointer(m_shipId));
-        auto _rope = static_cast<ROPE *>(core.GetEntityPointer(m_ropeId));
-        auto _sail = static_cast<SAIL *>(core.GetEntityPointer(m_sailId));
-        auto _flag = static_cast<FLAG *>(core.GetEntityPointer(m_flagId));
-        auto _vant = static_cast<VANT *>(core.GetEntityPointer(m_vantId));
-        auto _vantL = static_cast<VANTL *>(core.GetEntityPointer(m_vantLId));
-        auto _vantZ = static_cast<VANTZ *>(core.GetEntityPointer(m_vantZId));
+        auto _shipEntPtr = core.GetEntityPointerSafe(m_shipId);
+        if (_shipEntPtr == nullptr)
+        {
+            return;
+        }
+        auto _ship = static_cast<SHIP *>(_shipEntPtr);
 
-        CMatrix _viewMatrix;
+        //CMatrix _viewMatrix;
         CMatrix _projMatrix;
+
+        //CVECTOR t_camPos, t_camAng;
+        //float t_camPers;
+        //m_rs->GetCamera(t_camPos, t_camAng, t_camPers);
 
         CMatrix t_projMtx = m_rs->GetProjection();
         CMatrix t_viewMtx = m_rs->GetView();
+        CMatrix t_worldMtx = m_rs->GetWorld();
 
         D3DVIEWPORT9 vp;
         m_rs->GetViewport(&vp);
 
-        float coefScaleX = static_cast<float>(vp.Width) / m_screenSize.x;
-        float coefScaleY = static_cast<float>(vp.Height) / m_screenSize.y;
-
         D3DVIEWPORT9 viewer_vp;
-        viewer_vp.MaxZ = vp.MaxZ;
-        viewer_vp.MinZ = vp.MinZ;
-        viewer_vp.X = static_cast<int>(m_rect.left * coefScaleX);
-        viewer_vp.Y = static_cast<int>(m_rect.top * coefScaleY);
-        viewer_vp.Width = static_cast<int>((m_rect.right - m_rect.left) * coefScaleX);
-        viewer_vp.Height = static_cast<int>((m_rect.bottom - m_rect.top) * coefScaleY);
+        CalculateNewViewport(vp, viewer_vp);
         m_rs->SetViewport(&viewer_vp);
 
         _ship->ExecuteForMV(Delta_Time);
@@ -162,14 +182,23 @@ void CXI_MODELVIEWER::DrawShipScene(uint32_t Delta_Time)
                 camPos.y = _waveY + 1.0f;
             }
         }
-        _viewMatrix.BuildViewMatrix(CVECTOR(camPos.x, camPos.y, camPos.z), // точка, в которой находится камера
-                                    CVECTOR(centerX, newYCenter, centerZ), // точка, в которую мы смотрим
-                                    CVECTOR(0.0f, 1.0f, 0.0f));            // верх объекта
+
+        float newXCenter = _ship->State.vPos.x + centerX;
+        float newZCenter = _ship->State.vPos.z + centerZ;
+        
+        float newXCamPos = _ship->State.vPos.x + camPos.x;
+        float newZCamPos = _ship->State.vPos.z + camPos.z;
+
+        //_viewMatrix.BuildViewMatrix(CVECTOR(newXCamPos, camPos.y, newZCamPos), // точка, в которой находится камера
+        //                            CVECTOR(newXCenter, newYCenter, newZCenter), // точка, в которую мы смотрим
+        //                            CVECTOR(0.0f, 1.0f, 0.0f));            // верх объекта
+        m_rs->SetCamera(CVECTOR(newXCamPos, camPos.y, newZCamPos),
+                          CVECTOR(newXCenter, newYCenter, newZCenter),
+                          CVECTOR(0.0f, 1.0f, 0.0f));
+        //m_rs->SetView(&_viewMatrix);
         _projMatrix.BuildProjectionMatrix(D3DX_PI / 4, static_cast<float>(vp.Width), static_cast<float>(vp.Height),
                                           1.0f, 4000.0f);
-
         m_rs->SetRenderState(D3DRS_LIGHTING, true);
-        m_rs->SetView(&_viewMatrix);
         m_rs->SetProjection(&_projMatrix);
 
         if (skyEntId)
@@ -181,32 +210,88 @@ void CXI_MODELVIEWER::DrawShipScene(uint32_t Delta_Time)
         {
             auto _sea = static_cast<SEA *>(core.GetEntityPointer(seaEntId));
             _sea->Realize(Delta_Time);
+
+            if (seafoamEntId)
+            {
+                auto _seafoamEntPtr = core.GetEntityPointerSafe(seafoamEntId);
+                if (_seafoamEntPtr)
+                {
+                    auto _seafoam = static_cast<SEAFOAM *>(_seafoamEntPtr);
+                    _seafoam->Execute(Delta_Time);
+                    _seafoam->Realize(Delta_Time);
+                }
+            }
+            if (shipTrackEntId)
+            {
+                auto _shipTrackntPtr = core.GetEntityPointerSafe(shipTrackEntId);
+                if (_shipTrackntPtr)
+                {
+                    auto shipTrack = static_cast<ShipTracks *>(_shipTrackntPtr);
+                    shipTrack->Execute(Delta_Time);
+                    shipTrack->Realize(Delta_Time);
+                }
+            }
+        }
+        
+        auto _sailEntPtr = core.GetEntityPointerSafe(m_sailId);
+        if (_sailEntPtr)
+        {
+            auto _sail = static_cast<SAIL *>(_sailEntPtr);
+            _sail->ExecuteForMV(Delta_Time, m_fGlobalWinAngle, m_bUseSailRotation);
+            _sail->Realize(Delta_Time);
+        }
+
+        auto _ropeEntPtr = core.GetEntityPointerSafe(m_ropeId);
+        if (_ropeEntPtr)
+        {
+            auto _rope = static_cast<ROPE *>(_ropeEntPtr);
+            _rope->Execute(Delta_Time);
+            _rope->Realize(Delta_Time);
+        }
+
+        auto _flagEntPtr = core.GetEntityPointerSafe(m_flagId);
+        if (m_bRenderFlags && _flagEntPtr)
+        {
+            auto _flag = static_cast<FLAG *>(_flagEntPtr);
+            _flag->ExecuteForMV(Delta_Time, m_fGlobalWinAngle);
+            _flag->Realize(Delta_Time);
+        }
+
+        auto _vantEntPtr = core.GetEntityPointerSafe(m_vantId);
+        if (_vantEntPtr)
+        {
+            auto _vant = static_cast<VANT *>(_vantEntPtr);
+            _vant->Execute(Delta_Time);
+            _vant->Realize(Delta_Time);
+        }
+
+        auto _vantLEntPtr = core.GetEntityPointerSafe(m_vantLId);
+        if (_vantLEntPtr)
+        {
+            auto _vantL = static_cast<VANTL *>(_vantLEntPtr);
+            _vantL->Execute(Delta_Time);
+            _vantL->Realize(Delta_Time);
+        }
+
+        auto _vantZEntPtr = core.GetEntityPointerSafe(m_vantZId);
+        if (_vantZEntPtr)
+        {
+            auto _vantZ = static_cast<VANTZ *>(_vantZEntPtr);
+            _vantZ->Execute(Delta_Time);
+            _vantZ->Realize(Delta_Time);
         }
 
         // ship modelr
         _ship->Realize(Delta_Time);
 
-        _sail->ExecuteForMV(Delta_Time, m_fGlobalWinAngle);
-        _rope->Execute(Delta_Time);
-        _flag->ExecuteForMV(Delta_Time, m_fGlobalWinAngle);
-
-        _sail->Realize(Delta_Time);
-        _rope->Realize(Delta_Time);
-
-        _vant->Execute(Delta_Time);
-        _vant->Realize(Delta_Time);
-        _vantL->Execute(Delta_Time);
-        _vantL->Realize(Delta_Time);
-        _vantZ->Execute(Delta_Time);
-        _vantZ->Realize(Delta_Time);
-
-        _flag->Realize(Delta_Time);
-
         m_rs->SetRenderState(D3DRS_LIGHTING, false);
 
         m_rs->SetViewport(&vp);
+        //m_rs->SetCamera(t_camPos, t_camAng, t_camPers);
         m_rs->SetView(&t_viewMtx);
+        
         m_rs->SetProjection(&t_projMtx);
+        m_rs->SetWorld(&t_worldMtx);
     }
 }
 
@@ -216,35 +301,28 @@ void CXI_MODELVIEWER::DrawCommonScene(uint32_t Delta_Time)
     {
         auto c = static_cast<MODELR *>(core.GetEntityPointer(m_modelId));
 
-        CMatrix _viewMatrix;
+        //CMatrix _viewMatrix;
         CMatrix _projMatrix;
 
         CMatrix t_projMtx = m_rs->GetProjection();
         CMatrix t_viewMtx = m_rs->GetView();
+        CMatrix t_worldMtx = m_rs->GetWorld();
 
         D3DVIEWPORT9 vp;
         m_rs->GetViewport(&vp);
 
-        float coefScaleX = static_cast<float>(vp.Width) / m_screenSize.x;
-        float coefScaleY = static_cast<float>(vp.Height) / m_screenSize.y;
-
         D3DVIEWPORT9 viewer_vp;
-        viewer_vp.MaxZ = vp.MaxZ;
-        viewer_vp.MinZ = vp.MinZ;
-        viewer_vp.X = static_cast<int>(m_rect.left * coefScaleX);
-        viewer_vp.Y = static_cast<int>(m_rect.top * coefScaleY);
-        viewer_vp.Width = static_cast<int>((m_rect.right - m_rect.left) * coefScaleX);
-        viewer_vp.Height = static_cast<int>((m_rect.bottom - m_rect.top) * coefScaleY);
+        CalculateNewViewport(vp, viewer_vp);
         m_rs->SetViewport(&viewer_vp);
 
-        _viewMatrix.BuildViewMatrix(CVECTOR(camPos.x, camPos.y, camPos.z), // точка, в которой находится камера
+        m_rs->SetCamera(CVECTOR(camPos.x, camPos.y, camPos.z), // точка, в которой находится камера
                                     CVECTOR(centerX, centerY, centerZ), // точка, в которую мы смотрим
                                     CVECTOR(0.0f, 1.0f, 0.0f));            // верх объекта
         _projMatrix.BuildProjectionMatrix(D3DX_PI / 4, static_cast<float>(vp.Width), static_cast<float>(vp.Height),
                                           1.0f, 4000.0f);
 
         m_rs->SetRenderState(D3DRS_LIGHTING, true);
-        m_rs->SetView(&_viewMatrix);
+        //m_rs->SetView(&_viewMatrix);
         m_rs->SetProjection(&_projMatrix);
 
         // modelr
@@ -255,7 +333,26 @@ void CXI_MODELVIEWER::DrawCommonScene(uint32_t Delta_Time)
         m_rs->SetViewport(&vp);
         m_rs->SetView(&t_viewMtx);
         m_rs->SetProjection(&t_projMtx);
+        m_rs->SetWorld(&t_worldMtx);
     }
+}
+
+void CXI_MODELVIEWER::CalculateNewViewport(D3DVIEWPORT9 vp, D3DVIEWPORT9 &res_vp)
+{
+    float coefScaleX = static_cast<float>(vp.Width) / m_screenSize.x;
+    float coefScaleY = static_cast<float>(vp.Height) / m_screenSize.y;
+    
+    int newX = static_cast<int>(m_rect.left * coefScaleX);
+    int newY = static_cast<int>(m_rect.top * coefScaleY);
+    int newWidth = static_cast<int>((m_rect.right - m_rect.left) * coefScaleX);
+    int newHeight = static_cast<int>((m_rect.bottom - m_rect.top) * coefScaleY);
+
+    res_vp.MaxZ = vp.MaxZ;
+    res_vp.MinZ = vp.MinZ;
+    res_vp.X = newX < 0 ? vp.X : newX;
+    res_vp.Y = newY < 0 ? vp.Y : newY;
+    res_vp.Width = newWidth > vp.Width ? vp.Width : newWidth;
+    res_vp.Height = newHeight > vp.Height ? vp.Height : newHeight;
 }
 
 bool CXI_MODELVIEWER::Init(INIFILE *ini1, const char *name1, INIFILE *ini2, const char *name2, VDX9RENDER *rs,
@@ -326,7 +423,7 @@ void CXI_MODELVIEWER::ReleaseAll()
 {
     ReleasePicture();
 
-    core.EraseEntity(seaEntId);
+    //core.EraseEntity(seaEntId);
 }
 
 int CXI_MODELVIEWER::CommandExecute(int wActCode)
@@ -592,74 +689,40 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
             translateCoef = message.Float();
             
             UpdateCameraPosition();
-            m_CamIsSetted = true;
+            m_bCamSetted = true;
         }
         break;
 
-        case 2: // Set ship rig for scene
+        case 2: // Set ship rig for scene (required for ship drawing)
         {
             m_bRigSetted = false;
+
             // set ropes
-            if (m_ropeId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_ropeId);
-            }
             m_ropeId = message.EntityID();
-            //core.Trace("rope setted");
             // set sails
-            if (m_sailId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_sailId);
-            }
             m_sailId = message.EntityID();
-            //core.Trace("sail setted");
             // set flags
-            if (m_flagId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_flagId);
-            }
             m_flagId = message.EntityID();
-            //core.Trace("flag setted");
             // set vants
-            if (m_vantId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_vantId);
-            }
-            if (m_vantLId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_vantLId);
-            }
-            if (m_vantZId)
-            {
-                core.RemoveFromLayer(INTERFACE_EXECUTE, m_vantZId);
-            }
             m_vantId = message.EntityID();
             m_vantLId = message.EntityID();
             m_vantZId = message.EntityID();
-            //core.Trace("vants setted");
-
-            // m_fGlobalWinAngle may be set here
-            // m_fGlobalWinAngle = message.Float();
 
             m_bRigSetted = true;
         }
         break;
 
-        case 3: // Set sea and sky for scene
+        case 3: // Set Environment (sea, sky, etc) for scene
         {
-            if (seaEntId)
-            {
-                core.EraseEntity(seaEntId);
-            }
             seaEntId = message.EntityID();
-            if (skyEntId)
-            {
-                core.EraseEntity(skyEntId);
-            }
             skyEntId = message.EntityID();
+            // seafoam
+            seafoamEntId = message.EntityID();
+            // track
+            shipTrackEntId = message.EntityID();
         }
         break;
-        case 4: //Update camera translation (or zoom)
+        case 4: //Update camera settings (zoom, translation)
         {
             auto comName = message.String();
             if (comName == "translate")
@@ -701,7 +764,36 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
             }
         }
         break;
-        case 5: // Move the picture to a new position
+        case 5: //External settings
+        {
+            auto comName = message.String();
+            if (comName == "enableFlags")
+            {
+                m_bRenderFlags = message.Long();
+            }
+            else if (comName == "setGlobalWindAngle")
+            {
+                float _globalWindAngle = message.Float();
+                m_fGlobalWinAngle = _globalWindAngle;
+            }
+            else if (comName == "setShipSpeed")
+            {
+                auto s = static_cast<SHIP *>(core.GetEntityPointer(m_shipId));
+                float _newShipSpeed = message.Float();
+                if (_newShipSpeed > 50.f)
+                    _newShipSpeed = 50.f;
+                if (_newShipSpeed < 0.f)
+                    _newShipSpeed = 0.f;
+
+                s->State.vSpeed.z = _newShipSpeed;
+            }
+            else if (comName == "useSailRotation")
+            {
+                m_bUseSailRotation = message.Long();
+            }
+        }
+        break;
+        case 100: // Move the picture to a new position
         {
             m_rect.left = message.Long();
             m_rect.top = message.Long();
@@ -711,7 +803,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 6: // Set the texture coordinates of the image
+        case 101: // Set the texture coordinates of the image
         {
             FXYRECT texRect;
             texRect.left = message.Float();
@@ -722,7 +814,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 7: // Set a new picture or video picture
+        case 102: // Set a new picture or video picture
         {
             const auto bVideo = message.Long() != 0;
             const std::string &param = message.String();
@@ -730,14 +822,14 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 8: // Get a random picture from the directory
+        case 103: // Get a random picture from the directory
         {
             const std::string &param = message.String();
             SetNewPictureFromDir(param.c_str());
         }
         break;
 
-        case 9: // Set a new color
+        case 104: // Set a new color
         {
             const uint32_t color = message.Long();
             for (auto i = 0; i < 4; i++)
@@ -745,7 +837,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 10: // set / remove blinking
+        case 105: // set / remove blinking
         {
             const bool bBlind = message.Long() != 0;
             if (m_bMakeBlind != bBlind)
@@ -762,7 +854,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 11: // set new picture by group and picture name
+        case 106: // set new picture by group and picture name
         {
             const std::string &groupName = message.String();
             const std::string &picName = message.String();
@@ -770,7 +862,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 12: // set new picture by pointer to IDirect3DTexture9
+        case 107: // set new picture by pointer to IDirect3DTexture9
         {
             int32_t pTex = -1;
             if (message.GetCurrentFormatType() == 'p')
@@ -787,7 +879,7 @@ uint32_t CXI_MODELVIEWER::MessageProc(int32_t msgcode, MESSAGE &message)
         }
         break;
 
-        case 13: // remove texture from other picture to this
+        case 108: // remove texture from other picture to this
         {
             const std::string &srcNodeName = message.String();
             auto *pNod = static_cast<CINODE *>(ptrOwner->FindNode(srcNodeName.c_str(), nullptr));

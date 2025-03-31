@@ -1,4 +1,5 @@
 #include "track.h"
+#include "shared/messages.h"
 #include "entity.h"
 #include "core.h"
 #include "math3d.h"
@@ -58,6 +59,28 @@ void ShipTracks::DelShip(SHIP_BASE *pShip)
             aShips.erase(aShips.begin() + i);
             break;
         }
+}
+
+uint64_t ShipTracks::ProcessMessage(MESSAGE &message)
+{
+    // GUARD(SEAFOAM::ProcessMessage)
+
+    const auto code = message.Long();
+    const uint32_t outValue = 0;
+
+    switch (code)
+    {
+        case MSG_SHIP_INIT_FOR_MV: {
+            auto _seaId = message.EntityID();
+            ShipTrack::pSea = static_cast<SEA_BASE *>(core.GetEntityPointer(_seaId));
+
+            return 1;
+        }
+        break;
+    }
+
+    return outValue;
+    // UNGUARD
 }
 
 void ShipTracks::Execute(uint32_t dwDeltaTime)
