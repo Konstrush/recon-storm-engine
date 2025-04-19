@@ -91,6 +91,7 @@ class SAIL : public SAIL_BASE
     void Realize(uint32_t Delta_Time);
     void Execute(uint32_t Delta_Time);
     void ExecuteForMV(uint32_t Delta_Time, float gWindAngle, bool useSailRotation);
+	void CalcForRepair(); //HardCoffee
     bool CreateState(ENTITY_STATE_GEN *state_gen);
     bool LoadState(ENTITY_STATE *state);
     uint64_t ProcessMessage(MESSAGE &message) override;

@@ -246,7 +246,8 @@ class SHIP : public SHIP_BASE
     void SetPos(const CVECTOR &vNewPos) override;
 
     bool Mount(ATTRIBUTES *) override;
-
+	bool MountForRepair(ATTRIBUTES *); //HardCoffee
+	
     // inherit functions Entity
     bool Init() override;
     void Realize(uint32_t Delta_Time);

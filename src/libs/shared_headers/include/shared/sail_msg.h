@@ -9,6 +9,7 @@
 #define MSG_SAIL_CHECK 40023           // "liii" (msg_code, ship_id, newHost_id, newModel_id)
 #define MSG_SAIL_GET_PARAMS 40024      // "lip" (msg_code, ship_id, &maxSpeed)
 #define MSG_SAIL_MAST_PROCESSING 40025 // "ll" (msg_code, charIdx)
+#define MSG_SAIL_CALC 40026            // "l" HardCoffee calc sails for repair			  
 // get the maximum speed factor for the ship
 // format "lipf" (msg_code, ship_id,&speed, maxSpeed) //speed<-[0.f,1.f], maxSpeed=[0.f,1.f];
 #define MSG_SAIL_GET_SPEED 40002

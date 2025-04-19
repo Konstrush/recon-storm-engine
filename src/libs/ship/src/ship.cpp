@@ -1314,6 +1314,10 @@ uint64_t SHIP::ProcessMessage(MESSAGE &message)
         bMounted = true;
     }
     break;
+    case MSG_SHIP_MOUNT_FOR_REPAIR: //HardCoffee
+        SetACharacter(message.AttributePointer());
+        return MountForRepair(message.AttributePointer());
+    break;
     case MSG_SHIP_SET_SAIL_STATE:
         SetSailState(message.Float());
         break;
@@ -1771,6 +1775,80 @@ bool SHIP::Mount(ATTRIBUTES *_pAShip)
     pABox->SetAttributeUseFloat("z", State.vRealBoxSize.z);
 
     bMounted = true;
+    return true;
+}
+
+bool SHIP::MountForRepair(ATTRIBUTES *_pAShip) //HardCoffee
+{
+
+    Assert(_pAShip);
+    pAShip = _pAShip;
+
+    core.Event("Ship_StartLoad", "a", GetACharacter());
+
+    core.AddToLayer(RealizeLayer, GetId(), iShipPriorityRealize);
+    core.AddToLayer(ExecuteLayer, GetId(), iShipPriorityExecute);
+
+    const char *pName = GetAShip()->GetAttribute("Name");
+    if (!pName)
+    {
+        core.Trace("SHIP::Mount : Can't find attribute name in ShipsTypes %d, char: %d, %s, %s, %s",
+                   GetAShip()->GetAttributeAsDword("index"), GetACharacter()->GetAttributeAsDword("index"),
+                   static_cast<const char *>(GetACharacter()->GetAttribute("name")),
+                   static_cast<const char *>(GetACharacter()->GetAttribute("lastname")),
+                   static_cast<const char *>(GetACharacter()->GetAttribute("id")));
+        bMounted = false;
+        return false;
+    }
+
+    strcpy_s(cShipIniName, pName);
+
+    char temp_str[1024];
+    sprintf_s(temp_str, "ships\\%s\\%s", cShipIniName, cShipIniName);
+
+    model_id = core.CreateEntity("MODELR");
+    core.Send_Message(GetModelEID(), "ls", MSG_MODEL_LOAD_GEO, temp_str);
+
+    if (sail_id = core.GetEntityId("sail"))
+        core.Send_Message(sail_id, "liil", MSG_SAIL_INIT, GetId(), GetModelEID(), GetSailState() ? 1 : 0);
+
+    if (rope_id = core.GetEntityId("rope"))
+        core.Send_Message(rope_id, "lii", MSG_ROPE_INIT, GetId(), GetModelEID());
+
+    if (vant_id = core.GetEntityId("vant"))
+        core.Send_Message(vant_id, "lii", MSG_VANT_INIT, GetId(), GetModelEID());
+
+    if (vantl_id = core.GetEntityId("vantl"))
+        core.Send_Message(vantl_id, "lii", MSG_VANT_INIT, GetId(), GetModelEID());
+
+    if (vantz_id = core.GetEntityId("vantz"))
+        core.Send_Message(vantz_id, "lii", MSG_VANT_INIT, GetId(), GetModelEID());
+
+
+    GEOS::INFO ginfo;
+    MODEL *pModel = GetModel();
+    Assert(pModel);
+    NODE *pNode = pModel->GetNode(0);
+    Assert(pNode);
+    pNode->geo->GetInfo(ginfo);
+
+    CalcRealBoxsize();
+
+    State.vBoxSize.x = ginfo.boxsize.x;
+    State.vBoxSize.y = ginfo.boxsize.y;
+    State.vBoxSize.z = ginfo.boxsize.z;
+
+    SP.fLength = State.vBoxSize.z;
+    SP.fWidth = State.vBoxSize.x;
+    fGravity = 9.81f;
+
+    BuildMasts();
+
+    core.Event("Ship_EndLoad", "a", GetACharacter());
+
+    bMounted = true;
+
+    LoadPositionFromAttributes();
     return true;
 }
 

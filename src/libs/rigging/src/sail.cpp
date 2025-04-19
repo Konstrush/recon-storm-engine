@@ -607,6 +607,70 @@ void SAIL::ExecuteForMV(uint32_t Delta_Time, float gWindAngle, bool useSailRotat
     }
 }
 
+void SAIL::CalcForRepair() //HardCoffee
+{
+    int i;
+    float fSP, curSP, repSP, fSDmg, fSPow;
+
+    if (bFirstRun)
+    {
+        FirstRun();
+        wFirstIndx = sailQuantity;
+    }
+    if (bDeleteState)
+    {
+        DeleteSailGroup();
+        wFirstIndx = sailQuantity;
+    }
+
+     for (i = 0; i < groupQuantity; i++)
+    {
+         if (gdata[i].bDeleted)
+             continue;
+        
+         fSP = static_cast<float>(gdata[i].maxSP);
+         curSP = fSP;
+         repSP = 0.0;
+         fSDmg = 0.0;
+         fSPow = 0.0;
+         if (gdata[i].maxHole != 0)
+         {
+             fSP = (float)gdata[i].maxSP * gdata[i].curHole / gdata[i].maxHole;
+             curSP = 0.0;
+             for (int j = 0; j < gdata[i].sailQuantity; j++)
+             {
+                 int sn = gdata[i].sailIdx[j];
+                 fSPow = (float)gdata[i].maxSP * (float)slist[sn]->maxSpeed / gdata[i].speed_m;
+                 fSPow = fSPow;
+                 fSDmg += fSPow * slist[sn]->ss.holeCount / slist[sn]->GetMaxHoleCount();
+                 curSP += fSPow;
+                 repSP += fSPow;
+                 repSP = repSP;
+             }
+             curSP -= fSDmg;
+         }
+         if (fSP > gdata[i].maxSP)
+             fSP = (float)gdata[i].maxSP;
+         if (curSP > gdata[i].maxSP)
+             curSP = (float)gdata[i].maxSP;
+
+         if (gdata[i].bYesShip)
+         {
+             auto *pVai = static_cast<VAI_OBJBASE *>(core.GetEntityPointer(gdata[i].shipEI));
+             if (pVai != nullptr && pVai->GetACharacter() != nullptr)
+             {
+                 ATTRIBUTES *pA = pVai->GetACharacter()->GetAttributeClass("Ship");
+                 if (pA != nullptr)
+                 {
+                     pA->SetAttributeUseDword("SP", fftoi(curSP));
+                     // HardCoffee Максимум парусов, который можно восстановить. Не учитывает паруса на сломаных мачтах
+                     pA->SetAttributeUseDword("SailQuantity", fftoi(repSP));
+                 }
+             }
+         }
+    }
+}
+
 void SAIL::Realize(uint32_t Delta_Time)
 {
     uint32_t dwOldTextureFactor;
@@ -1092,6 +1156,9 @@ uint64_t SAIL::ProcessMessage(MESSAGE &message)
         const std::string &param = message.String();
         return ScriptProcessing(param.c_str(), message);
     }
+    break;
+    case MSG_SAIL_CALC://HardCoffee
+        CalcForRepair();
     break;
     }
 
@@ -1855,6 +1922,17 @@ void SAIL::DoSailToNewHost(entid_t newModelEI, entid_t newHostEI, int grNum, NOD
     {
         gdata[oldg].sailQuantity--;
         gdata[oldg].sailIdx[idx] = gdata[oldg].sailIdx[gdata[oldg].sailQuantity];
+        //HardCoffee
+        ATTRIBUTES *pA = static_cast<VAI_OBJBASE *>(core.GetEntityPointer(gdata[oldg].shipEI))->GetACharacter();
+        if (pA != nullptr)
+        {
+            int chrIdx = static_cast<int>(pA->GetAttributeAsDword("index", -1));
+            if (chrIdx >= 0)
+                core.Event("DamageSailOnBrokenMast", "llssllllf", -1, chrIdx,
+                           (m_sMastName == nullptr ? "#" : m_sMastName), slist[sn]->hostNode->GetName(),
+                           slist[sn]->groupNum, slist[sn]->GetMaxHoleCount(), (1 << slist[sn]->GetMaxHoleCount()) - 1,
+                           slist[sn]->GetMaxHoleCount(), static_cast<float>(slist[sn]->maxSpeed) / gdata[oldg].speed_m);
+        }
     }
     bDeleteState = true;
 

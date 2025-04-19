@@ -74,6 +74,7 @@
 #define MSG_SHIP_SET_CUSTOM_FLAG 50313 // "li", flag entity - Specify a custom flag entity to use for this ship
 #define MSG_SHIP_INIT_FOR_MV 50314 // AlexBlade - special for MODELVIEWER node: (1) "laaiii" - chRef,shipRef,realShipEntId,SeaEntId,ShipTracksId; (2) "laaill" - chRef,shipRef,realShipEntId,-1,-1 (for render w/o sea) 
 #define MSG_SHIP_SAFE_DELETE 50315
+#define MSG_SHIP_MOUNT_FOR_REPAIR 50316 //HardCoffee for repair window "laa" code, rChr, rRealShip									  
 #define MSG_SHIP_GET_SAIL_STATE 50325
 #define MSG_SHIP_CURVES 50400
 #define MSG_SHIP_LIGHTSRESET 50402 // ugeen 25.12.19
