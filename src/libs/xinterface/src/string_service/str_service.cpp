@@ -1590,13 +1590,20 @@ uint32_t _StringFromKey(VS_STACK *pS)
         if (!pInStr->Get(strInStr))
         {
             int32_t intInStr;
-            if (!pInStr->Get(intInStr))
+            float_t floatInStr;
+            if (pInStr->Get(intInStr))
             {
-                core.Trace("[StringFromKey] Error: the first argument of the function 'StringFromKey' is specified incorrectly. check for underscores and numbers at the end of the first argument!");
-                return IFUNCRESULT_OK;
+                utf8_character = std::to_string(intInStr);
+            }
+            else if (pInStr->Get(floatInStr))
+            {
+                utf8_character = std::format("{:.{}f}", floatInStr, 2);
             }
             else
-                utf8_character = std::to_string(intInStr);
+            {
+                core.Trace("[StringFromKey] Error: invalid data type under number %d", o - i);
+                return IFUNCRESULT_OK;
+            }
         }
         else
         {
