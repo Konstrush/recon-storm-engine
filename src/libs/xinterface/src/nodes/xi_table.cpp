@@ -602,6 +602,8 @@ int CXI_TABLE::CommandExecute(int wActCode)
                     SelectRow(n, nCol);
                 else
                     SelectRow(n);
+                if (m_pHeader && n == 0)
+                    core.Event("OnHeaderClick", "sl", m_nodeName, nCol + 1);
                 // core.Event( "OnTableClick", "sll", m_nodeName, (m_pHeader?n:(n+1)), nCol+1 );
                 core.Event("OnTableClick", "sll", m_nodeName, m_nSelectIndex, nCol + 1);
             }
