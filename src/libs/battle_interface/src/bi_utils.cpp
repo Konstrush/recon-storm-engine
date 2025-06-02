@@ -362,16 +362,33 @@ void BITextInfo::Init(VDX9RENDER *rs, ATTRIBUTES *pA)
 
 void BITextInfo::Print()
 {
-    if (nFont != -1)
+    if (nFont == -1 || !pARefresh)
+        return;
+
+    const char *textAttr = pARefresh->GetAttribute("text");
+    sText = textAttr ? textAttr : "";
+    if (sText.empty())
+        return;
+
+    int iAlign = PR_ALIGN_CENTER;
+    const char *alignAttr = pARefresh->GetAttribute("align");
+    if (alignAttr)
     {
-        if (pARefresh)
+        const std::string sAlign = alignAttr;
+        if (sAlign == "left")
+            iAlign = PR_ALIGN_LEFT;
+        else if (sAlign == "right")
+            iAlign = PR_ALIGN_RIGHT;
+        ATTRIBUTES *pAttr = pARefresh->GetAttributeClass("pos");
+        if (pAttr)
         {
-            const char *textAttr = pARefresh->GetAttribute("text");
-            sText = textAttr ? textAttr : "";
+            pos.x = pAttr->GetAttributeAsDword("x", pos.x);
+            pos.y = pAttr->GetAttributeAsDword("y", pos.y);
         }
-        if (!sText.empty())
-            pRS->ExtPrint(nFont, dwColor, 0, PR_ALIGN_CENTER, bShadow, fScale, 0, 0, pos.x, pos.y, "%s", sText.c_str());
+        fScale = pARefresh->GetAttributeAsFloat("scale", fScale);
     }
+
+    pRS->ExtPrint(nFont, dwColor, 0, iAlign, bShadow, fScale, 0, 0, pos.x, pos.y, "%s", sText.c_str());
 }
 
 void BITextInfo::Print(std::string outputText)

@@ -227,6 +227,9 @@ class AIShip : public VAI_INNEROBJ
 
     static bool ShipFire(ATTRIBUTES *pACharacter, bool bCameraOutside);
 
+    //Control Tips
+    static bool FindEnemyInFireRange(ATTRIBUTES *pACharacter);
+
     static void ShipSetAttack(uint32_t dwPriority, ATTRIBUTES *pACharacter1, ATTRIBUTES *pACharacter2);
     static void ShipSetRunAway(uint32_t dwPriority, ATTRIBUTES *pACharacter1);
     static void ShipSetMove(uint32_t dwPriority, ATTRIBUTES *pACharacter1, ATTRIBUTES *pACharacter2);

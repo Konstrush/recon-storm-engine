@@ -351,6 +351,11 @@ uint64_t SEA_AI::ProcessMessage(MESSAGE &message)
         Load(str);
     }
     break;
+    case AI_MESSAGE_CHECK_FOR_FIRERANGE: {
+        auto *pACharacter = message.AttributePointer();
+        return AIShip::FindEnemyInFireRange(pACharacter);
+    }
+    break;
     }
     return 0;
 }

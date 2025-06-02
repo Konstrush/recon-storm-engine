@@ -627,6 +627,25 @@ bool AIShip::ShipFire(ATTRIBUTES *pACharacter, bool bCameraOutside)
     return FindShip(pACharacter)->Fire(bCameraOutside);
 }
 
+bool AIShip::FindEnemyInFireRange(ATTRIBUTES *pACharacter)
+{
+    const auto &pAShip = FindShip(pACharacter);
+    for (int i = 0; i < AIShips.size(); i++)
+    {
+        if (pAShip->isEnemy(*AIShips[i]))
+        {
+            const auto bCanFire = pAShip->GetCannonController()->isCanFire(AIShips[i]);
+            if (!pAShip->isCanFire(AIShips[i]->GetPos()))
+                continue;
+            if (bCanFire)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void AIShip::ShipSetAttack(uint32_t dwPriority, ATTRIBUTES *pACharacter1, ATTRIBUTES *pACharacter2)
 {
     auto *const pShip = FindShip(pACharacter1);
