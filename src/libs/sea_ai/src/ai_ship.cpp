@@ -627,20 +627,23 @@ bool AIShip::ShipFire(ATTRIBUTES *pACharacter, bool bCameraOutside)
     return FindShip(pACharacter)->Fire(bCameraOutside);
 }
 
+// HardCoffee Control Tips
 bool AIShip::FindEnemyInFireRange(ATTRIBUTES *pACharacter)
 {
-    const auto &pAShip = FindShip(pACharacter);
+    auto *pShip = FindShip(pACharacter);
+    if (pShip == nullptr)
+        return false;
+    if (pShip->isDead())
+        return false;
     for (int i = 0; i < AIShips.size(); i++)
     {
-        if (pAShip->isEnemy(*AIShips[i]))
+        if (pShip->isEnemy(*AIShips[i]))
         {
-            const auto bCanFire = pAShip->GetCannonController()->isCanFire(AIShips[i]);
-            if (!pAShip->isCanFire(AIShips[i]->GetPos()))
+            bool bCanFire = pShip->GetCannonController()->isCanFire(AIShips[i]);
+            if (!pShip->isCanFire(AIShips[i]->GetPos()))
                 continue;
             if (bCanFire)
-            {
                 return true;
-            }
         }
     }
     return false;

@@ -351,8 +351,11 @@ uint64_t SEA_AI::ProcessMessage(MESSAGE &message)
         Load(str);
     }
     break;
+    // HardCoffee Control Tips
     case AI_MESSAGE_CHECK_FOR_FIRERANGE: {
         auto *pACharacter = message.AttributePointer();
+        if (!pACharacter)
+            return false;
         return AIShip::FindEnemyInFireRange(pACharacter);
     }
     break;
