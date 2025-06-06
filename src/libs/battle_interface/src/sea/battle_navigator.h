@@ -163,10 +163,17 @@ class BATTLE_NAVIGATOR
     int32_t m_idIslandTexture{-1}; // Isle
     int32_t m_idWindTex{-1};       // wind
     int32_t m_idBestCourseTex{-1}; // best direction pointers
-    int32_t m_idChargeTexture{-1}; // current cannon charge type
-    int32_t m_idPowderTexture{-1}; // current gunpowder
     int32_t m_idWindTexture{-1};   // wind speed
     int32_t m_idSailTexture{-1};   // sail position / ship speed
+    // HardCoffee bottomBar icons
+    int32_t m_idBallsTexture{-1};
+    int32_t m_idGrapesTexture{-1};
+    int32_t m_idKnippelsTexture{-1};
+    int32_t m_idBombsTexture{-1};
+    int32_t m_idPowderTexture{-1};
+    int32_t m_idWeaponTexture{-1};
+    int32_t m_idPlanksTexture{-1};
+    int32_t m_idSailclothTexture{-1};
     IDirect3DTexture9 *m_pIslandTexture{};
 
     uint32_t m_dwSeaColor{};                 // color of the sea on the minimap
@@ -208,17 +215,6 @@ class BATTLE_NAVIGATOR
     WEATHER_BASE *m_wb{};
     ATTRIBUTES *m_pAWeather{};
 
-    // icon of the current cannon charge type
-    POINT m_ChargeGreed{};
-    POINT m_ChargePos{};
-    POINT m_ChargeSize{};
-    int32_t m_curCharge{-1};
-    // gunpowder icon
-    POINT m_PowderGreed{};
-    POINT m_PowderPos{};
-    POINT m_PowderSize{};
-    int32_t m_curPowder{};
-    bool m_bPowderRunOut{}; // for blinking
     // wind icon
     int32_t m_curWindPic{};
     POINT m_WindGreed{};
@@ -229,10 +225,52 @@ class BATTLE_NAVIGATOR
     POINT m_SailGreed{};
     POINT m_SailPos{};
     POINT m_SailSize{};
+    // HardCoffee bottomBar icons
+    POINT m_BallsGreed{};
+    POINT m_BallsPos{};
+    POINT m_BallsSize{};
+    int32_t m_curBalls{};
+
+    POINT m_GrapesGreed{};
+    POINT m_GrapesPos{};
+    POINT m_GrapesSize{};
+    int32_t m_curGrapes{};
+
+    POINT m_KnippelsGreed{};
+    POINT m_KnippelsPos{};
+    POINT m_KnippelsSize{};
+    int32_t m_curKnippels{};
+
+    POINT m_BombsGreed{};
+    POINT m_BombsPos{};
+    POINT m_BombsSize{};
+    int32_t m_curBombs{};
+
+    POINT m_PowderGreed{};
+    POINT m_PowderPos{};
+    POINT m_PowderSize{};
+    int32_t m_curPowder{};
+    bool m_bPowderRunOut{}; // for blinking
+
+    POINT m_WeaponGreed{};
+    POINT m_WeaponPos{};
+    POINT m_WeaponSize{};
+    int32_t m_curWeapon{};
+
+    POINT m_PlanksGreed{};
+    POINT m_PlanksPos{};
+    POINT m_PlanksSize{};
+    int32_t m_curPlanks{};
+
+    POINT m_SailclothGreed{};
+    POINT m_SailclothPos{};
+    POINT m_SailclothSize{};
+    int32_t m_curSailcloth{};
 
     float m_fFontScale{};
 
     bool m_bNotEnoughBallFlag = false;
+    int32_t isChargeRunOut = -1;
 
     float m_fAspectRatio{};
 };
