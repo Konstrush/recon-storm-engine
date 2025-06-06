@@ -526,6 +526,7 @@ void BICommandList::UpdateShowIcon()
                 i += ClockIconAdd(m_aUsedCommand[n].nSelPictureIndex, m_aUsedCommand[n].nCooldownPictureIndex,
                                   m_aUsedCommand[n].nTextureIndex, rPos, m_aUsedCommand[n].fCooldownFactor);
             SetNote(m_aUsedCommand[n].sNote.c_str(), (rPos.left + rPos.right) / 2, (rPos.top + rPos.bottom) / 2);
+            core.Event("evntBISelect", "s", m_aUsedCommand[n].sNote.c_str());
             auto *const pSD = g_ShipList.FindShip(m_aUsedCommand[n].nCharIndex);
             if (pSD)
             {
