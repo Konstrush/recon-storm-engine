@@ -44,6 +44,7 @@ class WideScreen : public Entity
               RestoreRender(delta); break;*/
         }
     }
+	float msaaOffset;
 
     // --------------------------------------------------------------------------------------------
     // Encapsulation

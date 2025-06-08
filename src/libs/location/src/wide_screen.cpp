@@ -32,7 +32,7 @@ bool WideScreen::Init()
     // Layers
     // core.LayerCreate("realize", true, false);
     core.SetLayerType(REALIZE, layer_type_t::realize);
-    core.AddToLayer(REALIZE, GetId(), -257);
+    core.AddToLayer(REALIZE, GetId(), -1257);
     rs = static_cast<VDX9RENDER *>(core.GetService("dx9render"));
     if (!rs)
         throw std::runtime_error("No service: dx9render");
@@ -40,6 +40,7 @@ bool WideScreen::Init()
     rs->GetViewport(&vp);
     w = static_cast<float>(vp.Width);
     h = static_cast<float>(vp.Height);
+	msaaOffset = -0.5f;
     if (w <= 0 || h <= 0)
         return false;
     return true;
@@ -73,23 +74,23 @@ void WideScreen::Realize(uint32_t delta_time)
         float x, y, z, rhw;
     } buf[12];
     const auto hg = state * h * 0.1f;
-    buf[0].x = 0.0f;
-    buf[0].y = 0.0f;
+    buf[0].x = msaaOffset;
+    buf[0].y = msaaOffset;
     buf[0].z = 0.5f;
     buf[0].rhw = 1.0f;
-    buf[1].x = 0.0f;
+    buf[1].x = msaaOffset;
     buf[1].y = hg;
     buf[1].z = 0.5f;
     buf[1].rhw = 1.0f;
     buf[2].x = w;
-    buf[2].y = 0.0f;
+    buf[2].y = msaaOffset;
     buf[2].z = 0.5f;
     buf[2].rhw = 1.0f;
     buf[3].x = w;
-    buf[3].y = 0.0f;
+    buf[3].y = msaaOffset;
     buf[3].z = 0.5f;
     buf[3].rhw = 2.0f;
-    buf[4].x = 0.0f;
+    buf[4].x = msaaOffset;
     buf[4].y = hg;
     buf[4].z = 0.5f;
     buf[4].rhw = 2.0f;
@@ -97,11 +98,11 @@ void WideScreen::Realize(uint32_t delta_time)
     buf[5].y = hg;
     buf[5].z = 0.5f;
     buf[5].rhw = 2.0f;
-    buf[6].x = 0.0f;
+    buf[6].x = msaaOffset;
     buf[6].y = h - hg;
     buf[6].z = 0.5f;
     buf[6].rhw = 2.0f;
-    buf[7].x = 0.0f;
+    buf[7].x = msaaOffset;
     buf[7].y = h;
     buf[7].z = 0.5f;
     buf[7].rhw = 2.0f;
@@ -113,7 +114,7 @@ void WideScreen::Realize(uint32_t delta_time)
     buf[9].y = h - hg;
     buf[9].z = 0.5f;
     buf[9].rhw = 2.0f;
-    buf[10].x = 0.0f;
+    buf[10].x = msaaOffset;
     buf[10].y = h;
     buf[10].z = 0.5f;
     buf[10].rhw = 2.0f;

@@ -4231,6 +4231,7 @@ void DX9RENDER::ProgressView()
     progressUpdateTime = time;
     isInPViewProcess = true;
     progressSafeCounter = 0;
+	const float msaaOffset = -0.5f;
     // Drawing mode
     BeginScene();
     // Filling the vertices of the texture
@@ -4251,11 +4252,11 @@ void DX9RENDER::ProgressView()
     D3DVIEWPORT9 vp;
     GetViewport(&vp);
 
-    v[0].x = 0.0f;
-    v[0].y = 0.0f;
+    v[0].x = msaaOffset;
+    v[0].y = msaaOffset;
     v[1].x = float(vp.Width);
-    v[1].y = 0.0f;
-    v[2].x = 0.0f;
+    v[1].y = msaaOffset;
+    v[2].x = msaaOffset;
     v[2].y = float(vp.Height);
     v[3].x = float(vp.Width);
     v[3].y = float(vp.Height);
