@@ -17,7 +17,7 @@ class StormEngine(ConanFile):
 
     # dependencies used in deploy binaries
     # conan-center
-    requires = ["zlib/1.2.13", "spdlog/1.9.2", "fast_float/3.4.0", "mimalloc/2.0.3", "sentry-native/0.6.5",
+    requires = ["zlib/1.2.13", "spdlog/1.9.2", "fast_float/3.4.0", "sentry-native/0.6.5",
     # storm.jfrog.io
     "directx/9.0@storm/prebuilt", "fmod/2.02.05@storm/prebuilt"]
     # aux dependencies (e.g. for tests)
@@ -42,8 +42,6 @@ class StormEngine(ConanFile):
 
     default_options = {
         "sentry-native:backend": "crashpad",
-        "mimalloc:shared": True,
-        "mimalloc:override": True
     }
 
     def imports(self):
@@ -63,8 +61,6 @@ class StormEngine(ConanFile):
             if self.options.steam:
                 self.__install_lib("steam_api64.dll")
 
-            self.__install_bin("mimalloc*.dll") # mimalloc, mimalloc-redirect, mimalloc-debug, etc.
-
         else: # not Windows
             if self.settings.build_type == "Debug":
                 self.__install_lib("libfmodL.so.13")
@@ -74,13 +70,6 @@ class StormEngine(ConanFile):
             self.__install_bin("crashpad_handler")
             #if self.options.steam:
             #    self.__install_lib("steam_api64.dll")#TODO: fix conan package and then lib name
-
-            if self.settings.build_type == "Debug":
-                self.__install_lib("libmimalloc-debug.so.2.0")
-                self.__install_lib("libmimalloc-debug.so")
-            else:
-                self.__install_lib("libmimalloc.so.2.0")
-                self.__install_lib("libmimalloc.so")
 
         self.__write_watermark();
 
