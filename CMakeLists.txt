@@ -28,8 +28,8 @@ endif()
 
 ### Set up third-party dependencies
 set(ENV{CONAN_REVISIONS_ENABLED} 1)
-conan_add_remote(NAME storm
-    URL https://storm.jfrog.io/artifactory/api/conan/conan-remote
+conan_add_remote(NAME piratesahoy
+    URL https://gitlab.com/api/v4/projects/54068744/packages/conan
     VERIFY_SSL True
 )
 normalize_booleans(STORM_ENABLE_CRASH_REPORTS STORM_ENABLE_STEAM STORM_USE_CONAN_SDL)
