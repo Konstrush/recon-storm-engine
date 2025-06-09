@@ -510,11 +510,16 @@ void BICommandList::UpdateShowIcon()
     rPos.bottom = rPos.top + m_pntActiveIconSize.y;
     m_pImgRender->CreateImage(BIType_square, m_sActiveIconTexture.c_str(), 0xFF808080, m_frActiveIconUV2, rPos);
 
+    const int32_t iSize = m_aUsedCommand.size();
+
     m_bLeftArrow = m_nStartUsedCommandIndex > 0;
-    m_bRightArrow = m_aUsedCommand.size() - m_nStartUsedCommandIndex > m_nIconShowMaxQuantity;
+    m_bRightArrow = iSize - m_nStartUsedCommandIndex > m_nIconShowMaxQuantity;
+
+    if (m_nSelectedCommandIndex > iSize - 1)
+        m_nSelectedCommandIndex = iSize - 1;
 
     int32_t i = 0;
-    for (auto n = m_nStartUsedCommandIndex; n < m_aUsedCommand.size() && i < m_nIconShowMaxQuantity; n++)
+    for (auto n = m_nStartUsedCommandIndex; n < iSize && i < m_nIconShowMaxQuantity; n++)
     {
         GetCurrentPos(i, rPos);
         AdditiveIconAdd(.5f * (rPos.left + rPos.right), static_cast<float>(rPos.bottom), m_aUsedCommand[n].aAddPicList);
