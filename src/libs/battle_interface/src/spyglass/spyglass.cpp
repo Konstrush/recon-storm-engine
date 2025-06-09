@@ -141,6 +141,10 @@ bool ISPYGLASS::Init()
     m_TextCaptainBoarding.LoadFromAttr(rs, GetAttr("captext.boarding"), "", 210, 640);
 	// <-- captain data 
 
+    // control Tips
+    m_TextTipKey.LoadFromAttr(rs, GetAttr("tip.zoomKey"), "", 0, 0);
+    m_TextTipTxt.LoadFromAttr(rs, GetAttr("tip.zoomTxt"), "", 0, 0);
+
     FillUVArrayFromAttributes(m_aNationUV, GetAttr("nationuvarray"));
     FillUVArrayFromAttributes(m_aChargeUV, GetAttr("chargeuvarray"));
     FillUVArrayFromAttributes(m_aSailUV, GetAttr("sailuvarray"));
@@ -208,6 +212,9 @@ void ISPYGLASS::Realize(uint32_t delta_time) const
             m_TextCaptainNavigation.Print();
             m_TextCaptainBoarding.Print();
         }
+        // control tips
+        m_TextTipKey.Print();
+        m_TextTipTxt.Print();
     }
 }
 
@@ -333,6 +340,10 @@ void ISPYGLASS::Release()
     m_TextCaptainNavigation.Release();
     m_ImgCaptainBoarding.Release();
     m_TextCaptainBoarding.Release();
+
+    // control tips
+    m_TextTipKey.Release();
+    m_TextTipKey.Release();
 
     STORM_DELETE(m_pImgRender);
 }

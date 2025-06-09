@@ -163,6 +163,10 @@ class ISPYGLASS : public Entity
     TextParam m_txtShipCrew;
     TextParam m_txtSailTo; // boal
 
+    // Control tips
+    TextParam m_TextTipKey;
+    TextParam m_TextTipTxt;
+
     bool m_bIsOn;
     bool m_bIsPresentShipInfo;
     int32_t m_nInfoCharacterIndex;
