@@ -28,7 +28,7 @@ endif()
 
 ### Set up third-party dependencies
 set(ENV{CONAN_REVISIONS_ENABLED} 1)
-conan_add_remote(NAME piratesahoyAdd commentMore actions
+conan_add_remote(NAME piratesahoy
     URL https://gitlab.com/api/v4/projects/54068744/packages/conan
     VERIFY_SSL True
 )
