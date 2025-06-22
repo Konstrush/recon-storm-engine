@@ -2,6 +2,12 @@
 
 #include "dx9render.h"
 
+#define REPLACE_NONE 0
+#define TURN_180 1
+#define IMMEDIATE_RELOAD 2
+#define INSTANT_REPAIR 3
+#define LIGHT_REPAIR 4
+
 class ActivePerkShower : public Entity
 {
     VDX9RENDER *rs;
@@ -76,6 +82,8 @@ class ActivePerkShower : public Entity
         int32_t m_nPicTexIdx;
         // AlexBlade - цвет иконки
         uint32_t color;
+        // HardCoffee - bottombar
+        uint32_t replaceNumber;
     } * m_pIconsList;
 
     bool InitIconsList(ATTRIBUTES *pAIconsRoot);
@@ -93,6 +101,8 @@ class ActivePerkShower : public Entity
         float fontScale;
         uint32_t fontColor;
         bool b_fontShadow;
+        //HardCoffee - bottombar
+        uint32_t replaceNumber;
     } * m_pIconTextList;
 
     void SetIconStyle(ATTRIBUTES *pAIconDescr);

@@ -1,6 +1,7 @@
 #include "active_perk_shower.h"
 #include "bi_defines.h"
 #include "core.h"
+#include "bi_utils.h"
 #include "string_compare.hpp"
 #include "shared/battle_interface/msg_control.h"
 #include "vma.hpp"
@@ -97,10 +98,31 @@ void ActivePerkShower::Realize(uint32_t delta_time) const
         uint32_t fontColor = m_pIconTextList[i].fontColor;
         float fontScale = m_pIconTextList[i].fontScale;
         bool b_fontShadow = m_pIconTextList[i].b_fontShadow;
-        int posX = (int)(m_pShowPlaces[i].left + (m_pShowPlaces[i].right - m_pShowPlaces[i].left) / 2);
-        int posY = (int)(m_pShowPlaces[i].top + (m_pShowPlaces[i].bottom - m_pShowPlaces[i].top) / 2) -
-                   (int)(fontScale * fontCharHeight) / 2;
-
+        int posX, posY, iReplace;
+        // HardCoffee bottomBar
+        switch (m_pIconTextList[i].replaceNumber)
+        {
+        case TURN_180:
+            iReplace = m_nShowPlaceQ - 4;
+            break;
+        case IMMEDIATE_RELOAD:
+            iReplace = m_nShowPlaceQ - 3;
+            break;
+        case INSTANT_REPAIR:
+            iReplace = m_nShowPlaceQ - 2;
+            break;
+        case LIGHT_REPAIR:
+            iReplace = m_nShowPlaceQ - 1;
+            break;
+        default:
+            iReplace = i;
+            break;
+        }
+        if (iReplace < 0)
+            iReplace = 0;
+        posX = (int)(m_pShowPlaces[iReplace].left + (m_pShowPlaces[iReplace].right - m_pShowPlaces[iReplace].left) / 2);
+        posY = (int)(m_pShowPlaces[iReplace].top + (m_pShowPlaces[iReplace].bottom - m_pShowPlaces[iReplace].top) / 2) -
+            (int)(fontScale * fontCharHeight) / 2;
 
         rs->ExtPrint(nFont, fontColor, 0, PR_ALIGN_CENTER, b_fontShadow, fontScale, 0, 0, posX, posY, "%s", text);
     }
@@ -276,13 +298,28 @@ void ActivePerkShower::RefreshShowPlaces(ATTRIBUTES *pAPlacesRoot)
     if (nVertQ <= 0)
         nVertQ = 1;
 
-    m_nShowPlaceQ = nHorzQ * nVertQ;
+     // HardCoffee bottomBar
+    auto nSeaQ = 0;
+    const char *tmpstr;
+    POINT m_PictureSize{48, 48};
+    pAttr = pAPlacesRoot->GetAttributeClass("SeaPerks");
+    if (pAttr != nullptr)
+    {
+        if ((tmpstr = BIUtils::GetStringFromAttr(pAttr, "PictureSize", nullptr)) != nullptr)
+        {
+            sscanf(tmpstr, "%d,%d", &m_PictureSize.x, &m_PictureSize.y);
+            nSeaQ = pAttr->GetAttributesNum() - 1;
+        }
+    }
+
+    m_nShowPlaceQ = nHorzQ * nVertQ + nSeaQ;
     m_pShowPlaces = new _SHOW_PLACE[m_nShowPlaceQ];
     if (m_pShowPlaces == nullptr)
     {
         throw std::runtime_error("allocate memory error");
     }
 
+    auto i = 0;
     for (auto ih = 0; ih < nHorzQ; ih++)
     {
         for (auto iv = 0; iv < nVertQ; iv++)
@@ -292,6 +329,28 @@ void ActivePerkShower::RefreshShowPlaces(ATTRIBUTES *pAPlacesRoot)
             m_pShowPlaces[idx].left = static_cast<float>(m_pShowPlaces[idx].right - m_nIconWidth);
             m_pShowPlaces[idx].top = static_cast<float>(rectBound.top + iv * (m_nIconHeight + m_nSpaceVert));
             m_pShowPlaces[idx].bottom = static_cast<float>(m_pShowPlaces[idx].top + m_nIconHeight);
+            i = idx;
+        }
+    }
+    // HardCoffee bottomBar
+    if (nSeaQ > 0)
+    {
+        i++;
+        ATTRIBUTES *pPos;
+        POINT m_PicturePos{100, 100};
+        for (auto q = 0; q < nSeaQ; q++)
+        {
+            pPos = pAttr->GetAttributeClass(q + 1);
+            if (pPos == nullptr)
+                break;
+            if ((tmpstr = BIUtils::GetStringFromAttr(pPos, "Pos", nullptr)) != nullptr)
+            {
+                sscanf(tmpstr, "%d,%d", &m_PicturePos.x, &m_PicturePos.y);
+                m_pShowPlaces[i + q].right = static_cast<float>(m_PicturePos.x + m_PictureSize.x / 2);
+                m_pShowPlaces[i + q].left = static_cast<float>(m_PicturePos.x - m_PictureSize.x / 2);
+                m_pShowPlaces[i + q].top = static_cast<float>(m_PicturePos.y - m_PictureSize.y / 2);
+                m_pShowPlaces[i + q].bottom = static_cast<float>(m_PicturePos.y + m_PictureSize.y / 2);
+            }
         }
     }
 }
@@ -399,6 +458,33 @@ void ActivePerkShower::AddIconToList(ATTRIBUTES *pAItemDescr)
     m_pIconTextList[m_nIShowQ - 1].fontScale = fontScale;
     m_pIconTextList[m_nIShowQ - 1].fontColor = fontColor;
     m_pIconTextList[m_nIShowQ - 1].b_fontShadow = bFontShadow;
+    // HardCoffee bottomBar
+    const std::string_view attributeName = pAItemDescr->GetThisName();
+    if (storm::iEquals("turn180", attributeName))
+    {
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = TURN_180;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = TURN_180;
+    }
+    else if (storm::iEquals("ImmediateReload", attributeName))
+    {
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = IMMEDIATE_RELOAD;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = IMMEDIATE_RELOAD;
+    }
+    else if (storm::iEquals("InstantRepair", attributeName))
+    {
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = INSTANT_REPAIR;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = INSTANT_REPAIR;
+    }
+    else if (storm::iEquals("LightRepair", attributeName))
+    {
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = LIGHT_REPAIR;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = LIGHT_REPAIR;
+    }
+    else
+    {
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = REPLACE_NONE;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = REPLACE_NONE;
+    }
 
     FillVIBuffers();
 }
@@ -418,11 +504,13 @@ void ActivePerkShower::DelIconFromList(ATTRIBUTES *pAIconDescr)
             m_pIconsList[i - 1].m_nPicTexIdx = m_pIconsList[i].m_nPicTexIdx;
             m_pIconsList[i - 1].m_nPicNum = m_pIconsList[i].m_nPicNum;
             m_pIconsList[i - 1].color = m_pIconsList[i].color;
+            m_pIconsList[i - 1].replaceNumber = m_pIconsList[i].replaceNumber;
 
             m_pIconTextList[i - 1].text = m_pIconTextList[i].text;
             m_pIconTextList[i - 1].fontScale = m_pIconTextList[i].fontScale;
             m_pIconTextList[i - 1].fontColor = m_pIconTextList[i].fontColor;
             m_pIconTextList[i - 1].b_fontShadow = m_pIconTextList[i].b_fontShadow;
+            m_pIconTextList[i - 1].replaceNumber = m_pIconTextList[i].replaceNumber;
             continue;
         }
         if (texNum == m_pIconsList[i].m_nPicTexIdx && picNum == m_pIconsList[i].m_nPicNum)
@@ -437,7 +525,7 @@ void ActivePerkShower::DelIconFromList(ATTRIBUTES *pAIconDescr)
 
 void ActivePerkShower::FillVIBuffers()
 {
-    int pi, ti, start_idx;
+    int pi, ti, start_idx, iReplace;
 
     auto *pvb = static_cast<BI_COLOR_VERTEX *>(rs->LockVertexBuffer(m_idVBuf));
     if (pvb == nullptr)
@@ -453,7 +541,29 @@ void ActivePerkShower::FillVIBuffers()
             if (m_pIconsList[pi].m_nPicTexIdx != ti)
                 continue;
             m_pTexDescr[ti].m_nPicsQ++;
-            FillRectData(&pvb[start_idx * 4], m_pShowPlaces[pi], GetTextureRect(ti, m_pIconsList[pi].m_nPicNum),
+
+            // HardCoffee bottomBar
+            switch (m_pIconsList[pi].replaceNumber)
+            {
+            case TURN_180:
+                iReplace = m_nShowPlaceQ - 4;
+                break;
+            case IMMEDIATE_RELOAD:
+                iReplace = m_nShowPlaceQ - 3;
+                break;
+            case INSTANT_REPAIR:
+                iReplace = m_nShowPlaceQ - 2;
+                break;
+            case LIGHT_REPAIR:
+                iReplace = m_nShowPlaceQ - 1;
+                break;
+            default:
+                iReplace = pi;
+                break;
+            }
+            if (iReplace < 0)
+                iReplace = 0;
+            FillRectData(&pvb[start_idx * 4], m_pShowPlaces[iReplace], GetTextureRect(ti, m_pIconsList[pi].m_nPicNum),
                          m_pIconsList[pi].color);
             start_idx++;
         }
