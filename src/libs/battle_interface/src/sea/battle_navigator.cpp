@@ -563,9 +563,9 @@ void BATTLE_NAVIGATOR::Init(VDX9RENDER *RenderService, Entity *pOwnerEI)
         m_speedFont = -1;
     else
         m_speedFont = rs->LoadFont(tmpstr);
-    m_ySpeedShow = m_YNavigator + BIUtils::GetIntFromAttr(pARoot, "speedOutYOffset", -m_NavigationHeight / 2);
-    m_xShipSpeed = m_XNavigator + BIUtils::GetIntFromAttr(pARoot, "shipSpeedXOffset", 10);
-    m_xWindSpeed = m_XNavigator + BIUtils::GetIntFromAttr(pARoot, "windSpeedXOffset", -20);
+    m_ySpeedShow = BIUtils::GetIntFromAttr(pARoot, "speedOutYOffset", 0);
+    m_xShipSpeed = BIUtils::GetIntFromAttr(pARoot, "shipSpeedXOffset", 0);
+    m_xWindSpeed = BIUtils::GetIntFromAttr(pARoot, "windSpeedXOffset", 0);
     m_fFontScale = BIUtils::GetFloatFromAttr(pARoot, "fontScale", 1.f);
 
     tmpstr = BIUtils::GetStringFromAttr(pARoot, "compasTexture", nullptr);
@@ -655,8 +655,6 @@ void BATTLE_NAVIGATOR::Init(VDX9RENDER *RenderService, Entity *pOwnerEI)
     m_WindPos.y = 160;
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "windPos", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_WindPos.x, &m_WindPos.y);
-    m_WindPos.x += m_XNavigator;
-    m_WindPos.y += m_YNavigator;
     m_WindSize.x = 32;
     m_WindSize.y = 32;
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "windPictureSize", nullptr)) != nullptr)
@@ -676,8 +674,6 @@ void BATTLE_NAVIGATOR::Init(VDX9RENDER *RenderService, Entity *pOwnerEI)
     m_SailPos.y = 160;
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "sailstatePos", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_SailPos.x, &m_SailPos.y);
-    m_SailPos.x += m_XNavigator;
-    m_SailPos.y += m_YNavigator;
     m_SailSize.x = 32;
     m_SailSize.y = 32;
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "sailstatePictureSize", nullptr)) != nullptr)
