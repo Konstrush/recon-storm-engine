@@ -103,16 +103,16 @@ void ActivePerkShower::Realize(uint32_t delta_time) const
         switch (m_pIconTextList[i].replaceNumber)
         {
         case TURN_180:
-            iReplace = m_nShowPlaceQ - 4;
+            iReplace = m_nShowPlaceQ - TURN_180;
             break;
-        case IMMEDIATE_RELOAD:
-            iReplace = m_nShowPlaceQ - 3;
+        case IMM_RELOAD:
+            iReplace = m_nShowPlaceQ - IMM_RELOAD;
             break;
-        case INSTANT_REPAIR:
-            iReplace = m_nShowPlaceQ - 2;
+        case INSTANT_REP:
+            iReplace = m_nShowPlaceQ - INSTANT_REP;
             break;
-        case LIGHT_REPAIR:
-            iReplace = m_nShowPlaceQ - 1;
+        case LIGHT_REP:
+            iReplace = m_nShowPlaceQ - LIGHT_REP;
             break;
         default:
             iReplace = i;
@@ -467,18 +467,18 @@ void ActivePerkShower::AddIconToList(ATTRIBUTES *pAItemDescr)
     }
     else if (storm::iEquals("ImmediateReload", attributeName))
     {
-        m_pIconsList[m_nIShowQ - 1].replaceNumber = IMMEDIATE_RELOAD;
-        m_pIconTextList[m_nIShowQ - 1].replaceNumber = IMMEDIATE_RELOAD;
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = IMM_RELOAD;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = IMM_RELOAD;
     }
     else if (storm::iEquals("InstantRepair", attributeName))
     {
-        m_pIconsList[m_nIShowQ - 1].replaceNumber = INSTANT_REPAIR;
-        m_pIconTextList[m_nIShowQ - 1].replaceNumber = INSTANT_REPAIR;
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = INSTANT_REP;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = INSTANT_REP;
     }
     else if (storm::iEquals("LightRepair", attributeName))
     {
-        m_pIconsList[m_nIShowQ - 1].replaceNumber = LIGHT_REPAIR;
-        m_pIconTextList[m_nIShowQ - 1].replaceNumber = LIGHT_REPAIR;
+        m_pIconsList[m_nIShowQ - 1].replaceNumber = LIGHT_REP;
+        m_pIconTextList[m_nIShowQ - 1].replaceNumber = LIGHT_REP;
     }
     else
     {
@@ -546,16 +546,16 @@ void ActivePerkShower::FillVIBuffers()
             switch (m_pIconsList[pi].replaceNumber)
             {
             case TURN_180:
-                iReplace = m_nShowPlaceQ - 4;
+                iReplace = m_nShowPlaceQ - TURN_180;
                 break;
-            case IMMEDIATE_RELOAD:
-                iReplace = m_nShowPlaceQ - 3;
+            case IMM_RELOAD:
+                iReplace = m_nShowPlaceQ - IMM_RELOAD;
                 break;
-            case INSTANT_REPAIR:
-                iReplace = m_nShowPlaceQ - 2;
+            case INSTANT_REP:
+                iReplace = m_nShowPlaceQ - INSTANT_REP;
                 break;
-            case LIGHT_REPAIR:
-                iReplace = m_nShowPlaceQ - 1;
+            case LIGHT_REP:
+                iReplace = m_nShowPlaceQ - LIGHT_REP;
                 break;
             default:
                 iReplace = pi;

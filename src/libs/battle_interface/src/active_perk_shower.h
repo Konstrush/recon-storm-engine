@@ -4,9 +4,9 @@
 
 #define REPLACE_NONE 0
 #define TURN_180 1
-#define IMMEDIATE_RELOAD 2
-#define INSTANT_REPAIR 3
-#define LIGHT_REPAIR 4
+#define IMM_RELOAD 2
+#define INSTANT_REP 3
+#define LIGHT_REP 4
 
 class ActivePerkShower : public Entity
 {
