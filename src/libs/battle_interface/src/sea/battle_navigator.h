@@ -165,19 +165,10 @@ class BATTLE_NAVIGATOR
     int32_t m_idBestCourseTex{-1}; // best direction pointers
     int32_t m_idWindTexture{-1};   // wind speed
     int32_t m_idSailTexture{-1};   // sail position / ship speed
-    // HardCoffee bottomBar icons
-    int32_t m_idBallsTexture{-1};
-    int32_t m_idGrapesTexture{-1};
-    int32_t m_idKnippelsTexture{-1};
-    int32_t m_idBombsTexture{-1};
-    int32_t m_idPowderTexture{-1};
-    int32_t m_idWeaponTexture{-1};
-    int32_t m_idPlanksTexture{-1};
-    int32_t m_idClothTexture{-1};
-    int32_t m_idTurnTexture{-1};
-    int32_t m_idImmReloadTexture{-1};
-    int32_t m_idInstantRepTexture{-1};
-    int32_t m_idLightRepTexture{-1};
+    
+    int32_t m_idAmmoTexture{-1}; // HardCoffee bottomBar icons
+    int32_t m_idPerksTexture{-1};
+
     IDirect3DTexture9 *m_pIslandTexture{};
 
     uint32_t m_dwSeaColor{};                 // color of the sea on the minimap
@@ -221,74 +212,56 @@ class BATTLE_NAVIGATOR
 
     // wind icon
     int32_t m_curWindPic{};
-    POINT m_WindGreed{};
-    POINT m_WindPos{};
-    POINT m_WindSize{};
+    POINT m_WindGreed{1, 1};
+    POINT m_WindPos{0, 0};
+    POINT m_WindSize{0, 0};
     // sail position icon
     int32_t m_curSailState{};
-    POINT m_SailGreed{};
-    POINT m_SailPos{};
-    POINT m_SailSize{};
+    POINT m_SailGreed{1, 1};
+    POINT m_SailPos{0, 0};
+    POINT m_SailSize{0, 0};
     // HardCoffee bottomBar icons
-    POINT m_BallsGreed{0, 0};
+    POINT m_AmmoPicSize{0, 0};
+    POINT m_AmmoTexGreed{1, 1};
+
+    POINT m_PerksPicSize{0, 0};
+    POINT m_PerksTexGreed{1, 1};
+    
     POINT m_BallsPos{0, 0};
-    POINT m_BallsSize{0, 0};
     int32_t m_curBalls{};
 
-    POINT m_GrapesGreed{0, 0};
     POINT m_GrapesPos{0, 0};
-    POINT m_GrapesSize{0, 0};
     int32_t m_curGrapes{};
 
-    POINT m_KnippelsGreed{0, 0};
     POINT m_KnippelsPos{0, 0};
-    POINT m_KnippelsSize{0, 0};
     int32_t m_curKnippels{};
 
-    POINT m_BombsGreed{0, 0};
     POINT m_BombsPos{0, 0};
-    POINT m_BombsSize{0, 0};
     int32_t m_curBombs{};
 
-    POINT m_PowderGreed{0, 0};
     POINT m_PowderPos{0, 0};
-    POINT m_PowderSize{0, 0};
     int32_t m_curPowder{};
     bool m_bPowderRunOut{}; // for blinking
 
-    POINT m_WeaponGreed{0, 0};
     POINT m_WeaponPos{0, 0};
-    POINT m_WeaponSize{0, 0};
     int32_t m_curWeapon{};
 
-    POINT m_PlanksGreed{0, 0};
     POINT m_PlanksPos{0, 0};
-    POINT m_PlanksSize{0, 0};
     int32_t m_curPlanks{};
-    //SailCloth
-    POINT m_ClothGreed{0, 0};
-    POINT m_ClothPos{0, 0};
-    POINT m_ClothSize{0, 0};
+    
+    POINT m_ClothPos{0, 0}; //SailCloth
     int32_t m_curCloth{};
 
-    POINT m_TurnGreed{0, 0};
     POINT m_TurnPos{0, 0};
-    POINT m_TurnSize{0, 0};
     int32_t m_curTurn{};
 
-    POINT m_ImmReloadGreed{0, 0};
     POINT m_ImmReloadPos{0, 0};
-    POINT m_ImmReloadSize{0, 0};
     int32_t m_curImmReload{};
 
-    POINT m_InstantRepGreed{0, 0};
     POINT m_InstantRepPos{0, 0};
-    POINT m_InstantRepSize{0, 0};
     int32_t m_curInstantRep{};
 
-    POINT m_LightRepGreed{0, 0};
     POINT m_LightRepPos{0, 0};
-    POINT m_LightRepSize{0, 0};
     int32_t m_curLightRep{};
 
     float m_fFontScale{};

@@ -168,75 +168,58 @@ void BATTLE_NAVIGATOR::Draw() const
     rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 4, 2, "battle_rectangle");
 
 // HardCoffee bottomBar icons -->
-    if (m_idBallsTexture >= 0 && m_curBalls >= 0)
+    if (m_idAmmoTexture >= 0)
     {
-        rs->TextureSet(0, m_idBallsTexture);
-        rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 8, 2,
-                          isChargeRunOut == 1 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
+        rs->TextureSet(0, m_idAmmoTexture);
+        if (m_curBalls >= 0)
+        {
+            rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 8, 2,
+                              isChargeRunOut == 1 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");        
+        }
+        if (m_curGrapes >= 0)
+        {
+            rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 12, 2,
+                              isChargeRunOut == 2 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
+        }
+        if (m_curKnippels >= 0)
+        {
+            rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 16, 2,
+                              isChargeRunOut == 3 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
+        }
+        if (m_curBombs >= 0)
+        {
+            rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 20, 2,
+                              isChargeRunOut == 4 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
+        }
+        if (m_curPowder >= 0)
+        {
+            rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 24, 2,
+                              m_bPowderRunOut ? "battle_texure_blend_tf" : "battle_rectangle");
+        }
+        if (m_curWeapon >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 28, 2, "battle_rectangle");
+        if (m_curPlanks >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 32, 2, "battle_rectangle");
+        if (m_curCloth >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 36, 2, "battle_rectangle");
     }
-    if (m_idGrapesTexture >= 0 && m_curGrapes >= 0)
+
+    if (m_idPerksTexture >= 0)
     {
-        rs->TextureSet(0, m_idGrapesTexture);
-        rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 12, 2,
-                          isChargeRunOut == 2 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
-    }
-    if (m_idKnippelsTexture >= 0 && m_curKnippels >= 0)
-    {
-        rs->TextureSet(0, m_idKnippelsTexture);
-        rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 16, 2,
-                          isChargeRunOut == 3 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
-    }
-    if (m_idBombsTexture >= 0 && m_curBombs >= 0)
-    {
-        rs->TextureSet(0, m_idBombsTexture);
-        rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 20, 2,
-                          isChargeRunOut == 4 || m_bNotEnoughBallFlag ? "battle_texure_blend_tf" : "battle_rectangle");
-    }
-    if (m_idPowderTexture >= 0 && m_curPowder >= 0)
-    {
-        rs->TextureSet(0, m_idPowderTexture);
-        rs->SetRenderState(D3DRS_TEXTUREFACTOR, (BIUtils::g_dwBlinkColor << 24L) | 0xFFFFFF);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 24, 2,
-                          m_bPowderRunOut ? "battle_texure_blend_tf" : "battle_rectangle");
-    }
-    if (m_idWeaponTexture >= 0 && m_curWeapon >= 0)
-    {
-        rs->TextureSet(0, m_idWeaponTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 28, 2, "battle_rectangle");
-    }
-    if (m_idPlanksTexture >= 0 && m_curPlanks >= 0)
-    {
-        rs->TextureSet(0, m_idPlanksTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 32, 2, "battle_rectangle");
-    }
-    if (m_idClothTexture >= 0 && m_curCloth >= 0)
-    {
-        rs->TextureSet(0, m_idClothTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 36, 2, "battle_rectangle");
-    }
-    if (m_idTurnTexture >= 0 && m_curTurn >= 0)
-    {
-        rs->TextureSet(0, m_idTurnTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 40, 2, "battle_rectangle");
-    }
-    if (m_idImmReloadTexture >= 0 && m_curImmReload >= 0)
-    {
-        rs->TextureSet(0, m_idImmReloadTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 44, 2, "battle_rectangle");
-    }
-    if (m_idInstantRepTexture >= 0 && m_curInstantRep >= 0)
-    {
-        rs->TextureSet(0, m_idInstantRepTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 48, 2, "battle_rectangle");
-    }
-    if (m_idLightRepTexture >= 0 && m_curLightRep >= 0)
-    {
-        rs->TextureSet(0, m_idLightRepTexture);
-        rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 52, 2, "battle_rectangle");
+        rs->TextureSet(0, m_idPerksTexture);
+        if (m_curTurn >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 40, 2, "battle_rectangle");
+        if (m_curImmReload >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 44, 2, "battle_rectangle");
+        if (m_curInstantRep >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 48, 2, "battle_rectangle");
+        if (m_curLightRep >= 0)
+            rs->DrawPrimitive(D3DPT_TRIANGLESTRIP, m_idCurChargeVBuf, sizeof(BI_ONETEXTURE_VERTEX), 52, 2, "battle_rectangle");
     }
  //bottomBar icons <--
 }
@@ -663,262 +646,109 @@ void BATTLE_NAVIGATOR::Init(VDX9RENDER *RenderService, Entity *pOwnerEI)
         static_cast<float>(BIUtils::GetIntFromAttr(pARoot, "windSpeedEndAngle", 0)) / 180.f * PI;
 
     // wind icon
-    m_curSailState = 0;
-    m_WindGreed.x = 1;
-    m_WindGreed.y = 1;
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "windTextureGreed", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_WindGreed.x, &m_WindGreed.y);
-    if (m_WindGreed.x < 1)
-        m_WindGreed.x = 1;
-    if (m_WindGreed.y < 1)
-        m_WindGreed.y = 1;
-    m_WindPos.x = 160;
-    m_WindPos.y = 160;
+    if (m_WindGreed.x < 1) m_WindGreed.x = 1;
+    if (m_WindGreed.y < 1) m_WindGreed.y = 1;
+
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "windPos", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_WindPos.x, &m_WindPos.y);
-    m_WindSize.x = 32;
-    m_WindSize.y = 32;
+
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "windPictureSize", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_WindSize.x, &m_WindSize.y);
 
     // sail position icon
     m_curSailState = 0;
-    m_SailGreed.x = 1;
-    m_SailGreed.y = 1;
+
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "sailstateTextureGreed", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_SailGreed.x, &m_SailGreed.y);
-    if (m_SailGreed.x < 1)
-        m_SailGreed.x = 1;
-    if (m_SailGreed.y < 1)
-        m_SailGreed.y = 1;
-    m_SailPos.x = 160;
-    m_SailPos.y = 160;
+    if (m_SailGreed.x < 1) m_SailGreed.x = 1;
+    if (m_SailGreed.y < 1) m_SailGreed.y = 1;
+
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "sailstatePos", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_SailPos.x, &m_SailPos.y);
-    m_SailSize.x = 32;
-    m_SailSize.y = 32;
+
     if ((tmpstr = BIUtils::GetStringFromAttr(pARoot, "sailstatePictureSize", nullptr)) != nullptr)
         sscanf(tmpstr, "%d,%d", &m_SailSize.x, &m_SailSize.y);
     
 // HardCoffee bottomBar icons -->
     auto *const pABar = core.Entity_GetAttributeClass(BIUtils::idBattleInterface, "bottomBar");
+    assert(pABar);
+    if (pABar != nullptr)
+    {
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "AmmoPicSize", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_AmmoPicSize.x, &m_AmmoPicSize.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "ballsTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idBallsTexture = -1;
-    else
-        m_idBallsTexture = rs->TextureCreate(tmpstr);
+        tmpstr = BIUtils::GetStringFromAttr(pABar, "AmmoTexture", nullptr);
+        if (tmpstr == nullptr)
+            m_idAmmoTexture = -1;
+        else
+            m_idAmmoTexture = rs->TextureCreate(tmpstr);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "grapesTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idGrapesTexture = -1;
-    else
-        m_idGrapesTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "AmmoTexGreed", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_AmmoTexGreed.x, &m_AmmoTexGreed.y);
+        if (m_AmmoTexGreed.x < 1)
+            m_AmmoTexGreed.x = 1;
+        if (m_AmmoTexGreed.y < 1)
+            m_AmmoTexGreed.y = 1;
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "knippelsTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idKnippelsTexture = -1;
-    else
-        m_idKnippelsTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "PerksPicSize", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_PerksPicSize.x, &m_PerksPicSize.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "bombsTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idBombsTexture = -1;
-    else
-        m_idBombsTexture = rs->TextureCreate(tmpstr);
+        tmpstr = BIUtils::GetStringFromAttr(pABar, "PerksTexture", nullptr);
+        if (tmpstr == nullptr)
+            m_idPerksTexture = -1;
+        else
+            m_idPerksTexture = rs->TextureCreate(tmpstr);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "powderTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idPowderTexture = -1;
-    else
-        m_idPowderTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "PerksTexGreed", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_PerksTexGreed.x, &m_PerksTexGreed.y);
+        if (m_PerksTexGreed.x < 1)
+            m_PerksTexGreed.x = 1;
+        if (m_PerksTexGreed.y < 1)
+            m_PerksTexGreed.y = 1;
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "weaponTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idWeaponTexture = -1;
-    else
-        m_idWeaponTexture = rs->TextureCreate(tmpstr);
+        // Ammo
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "ballsPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_BallsPos.x, &m_BallsPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "planksTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idPlanksTexture = -1;
-    else
-        m_idPlanksTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "grapesPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_GrapesPos.x, &m_GrapesPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "clothTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idClothTexture = -1;
-    else
-        m_idClothTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "knippelsPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_KnippelsPos.x, &m_KnippelsPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "turnTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idTurnTexture = -1;
-    else
-        m_idTurnTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "bombsPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_BombsPos.x, &m_BombsPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "immReloadTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idImmReloadTexture = -1;
-    else
-        m_idImmReloadTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "powderPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_PowderPos.x, &m_PowderPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "instantRepTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idInstantRepTexture = -1;
-    else
-        m_idInstantRepTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "weaponPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_WeaponPos.x, &m_WeaponPos.y);
 
-    tmpstr = BIUtils::GetStringFromAttr(pABar, "lightRepTexture", nullptr);
-    if (tmpstr == nullptr)
-        m_idLightRepTexture = -1;
-    else
-        m_idLightRepTexture = rs->TextureCreate(tmpstr);
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "planksPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_PlanksPos.x, &m_PlanksPos.y);
+        // SailCloth
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "clothPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_ClothPos.x, &m_ClothPos.y);
 
-    // balls
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "ballsTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BallsGreed.x, &m_BallsGreed.y);
-    if (m_BallsGreed.x < 1) m_BallsGreed.x = 1;
-    if (m_BallsGreed.y < 1) m_BallsGreed.y = 1;
+        // Turn180 perk
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "turnPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_TurnPos.x, &m_TurnPos.y);
 
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "ballsPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BallsPos.x, &m_BallsPos.y);
+        // ImmediateReload perk
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "immReloadPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_ImmReloadPos.x, &m_ImmReloadPos.y);
 
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "ballsPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BallsSize.x, &m_BallsSize.y);
+        // InstantRepair perk
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "instantRepPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_InstantRepPos.x, &m_InstantRepPos.y);
 
-    // Grapes
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "grapesTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_GrapesGreed.x, &m_GrapesGreed.y);
-    if (m_GrapesGreed.x < 1) m_GrapesGreed.x = 1;
-    if (m_GrapesGreed.y < 1) m_GrapesGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "grapesPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_GrapesPos.x, &m_GrapesPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "grapesPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_GrapesSize.x, &m_GrapesSize.y);
-
-    // Knippels
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "knippelsTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_KnippelsGreed.x, &m_KnippelsGreed.y);
-    if (m_KnippelsGreed.x < 1) m_KnippelsGreed.x = 1;
-    if (m_KnippelsGreed.y < 1) m_KnippelsGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "knippelsPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_KnippelsPos.x, &m_KnippelsPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "knippelsPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_KnippelsSize.x, &m_KnippelsSize.y);
-
-    // Bombs
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "bombsTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BombsGreed.x, &m_BombsGreed.y);
-    if (m_BombsGreed.x < 1) m_BombsGreed.x = 1;
-    if (m_BombsGreed.y < 1) m_BombsGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "bombsPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BombsPos.x, &m_BombsPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "bombsPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_BombsSize.x, &m_BombsSize.y);
-
-    // powder
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "powderTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PowderGreed.x, &m_PowderGreed.y);
-    if (m_PowderGreed.x < 1) m_PowderGreed.x = 1;
-    if (m_PowderGreed.y < 1)  m_PowderGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "powderPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PowderPos.x, &m_PowderPos.y);
-    m_PowderSize.x = 32;
-    m_PowderSize.y = 32;
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "powderPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PowderSize.x, &m_PowderSize.y);
-    
-    // weapon
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "weaponTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_WeaponGreed.x, &m_WeaponGreed.y);
-    if (m_WeaponGreed.x < 1) m_WeaponGreed.x = 1;
-    if (m_WeaponGreed.y < 1) m_WeaponGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "weaponPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_WeaponPos.x, &m_WeaponPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "weaponPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_WeaponSize.x, &m_WeaponSize.y);
-
-    // Planks
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "planksTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PlanksGreed.x, &m_PlanksGreed.y);
-    if (m_PlanksGreed.x < 1) m_PlanksGreed.x = 1;
-    if (m_PlanksGreed.y < 1) m_PlanksGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "planksPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PlanksPos.x, &m_PlanksPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "planksPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_PlanksSize.x, &m_PlanksSize.y);
-
-    // SailCloth
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "clothTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ClothGreed.x, &m_ClothGreed.y);
-    if (m_ClothGreed.x < 1) m_ClothGreed.x = 1;
-    if (m_ClothGreed.y < 1) m_ClothGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "clothPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ClothPos.x, &m_ClothPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "clothPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ClothSize.x, &m_ClothSize.y);
-
-    // Turn180 perk
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "turnTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_TurnGreed.x, &m_TurnGreed.y);
-    if (m_TurnGreed.x < 1) m_TurnGreed.x = 1;
-    if (m_TurnGreed.y < 1) m_TurnGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "turnPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_TurnPos.x, &m_TurnPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "turnPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_TurnSize.x, &m_TurnSize.y);
-
-    // ImmediateReload perk
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "immReloadTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ImmReloadGreed.x, &m_ImmReloadGreed.y);
-    if (m_ImmReloadGreed.x < 1) m_ImmReloadGreed.x = 1;
-    if (m_ImmReloadGreed.y < 1) m_ImmReloadGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "immReloadPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ImmReloadPos.x, &m_ImmReloadPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "immReloadPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_ImmReloadSize.x, &m_ImmReloadSize.y);
-
-    // InstantRepair perk
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "instantRepTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_InstantRepGreed.x, &m_InstantRepGreed.y);
-    if (m_InstantRepGreed.x < 1) m_InstantRepGreed.x = 1;
-    if (m_InstantRepGreed.y < 1)  m_InstantRepGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "instantRepPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_InstantRepPos.x, &m_InstantRepPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "instantRepPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_InstantRepSize.x, &m_InstantRepSize.y);
-
-    // LightRepair perk
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "lightRepTexGreed", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_LightRepGreed.x, &m_LightRepGreed.y);
-    if (m_LightRepGreed.x < 1) m_LightRepGreed.x = 1;
-    if (m_LightRepGreed.y < 1) m_LightRepGreed.y = 1;
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "lightRepPos", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_LightRepPos.x, &m_LightRepPos.y);
-
-    if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "lightRepPicSize", nullptr)) != nullptr)
-        sscanf(tmpstr, "%d,%d", &m_LightRepSize.x, &m_LightRepSize.y);
+        // LightRepair perk
+        if ((tmpstr = BIUtils::GetStringFromAttr(pABar, "lightRepPos", nullptr)) != nullptr)
+            sscanf(tmpstr, "%d,%d", &m_LightRepPos.x, &m_LightRepPos.y);   
+    }
 // HardCoffee bottomBar <---
     // create buffers
     m_idEmptyVBuf =
@@ -1070,29 +900,29 @@ void BATTLE_NAVIGATOR::Init(VDX9RENDER *RenderService, Entity *pOwnerEI)
         SetRectangleVertexPos(&pV[4], static_cast<float>(m_SailPos.x), static_cast<float>(m_SailPos.y),
                               static_cast<float>(m_SailSize.x), static_cast<float>(m_SailSize.y));
         SetRectangleVertexPos(&pV[8], static_cast<float>(m_BallsPos.x), static_cast<float>(m_BallsPos.y),
-                              static_cast<float>(m_BallsSize.x), static_cast<float>(m_BallsSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[12], static_cast<float>(m_GrapesPos.x), static_cast<float>(m_GrapesPos.y),
-                              static_cast<float>(m_GrapesSize.x), static_cast<float>(m_GrapesSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[16], static_cast<float>(m_KnippelsPos.x), static_cast<float>(m_KnippelsPos.y),
-                              static_cast<float>(m_KnippelsSize.x), static_cast<float>(m_KnippelsSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[20], static_cast<float>(m_BombsPos.x), static_cast<float>(m_BombsPos.y),
-                              static_cast<float>(m_BombsSize.x), static_cast<float>(m_BombsSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[24], static_cast<float>(m_PowderPos.x), static_cast<float>(m_PowderPos.y),
-                              static_cast<float>(m_PowderSize.x), static_cast<float>(m_PowderSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[28], static_cast<float>(m_WeaponPos.x), static_cast<float>(m_WeaponPos.y),
-                              static_cast<float>(m_WeaponSize.x), static_cast<float>(m_WeaponSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[32], static_cast<float>(m_PlanksPos.x), static_cast<float>(m_PlanksPos.y),
-                              static_cast<float>(m_PlanksSize.x), static_cast<float>(m_PlanksSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[36], static_cast<float>(m_ClothPos.x), static_cast<float>(m_ClothPos.y),
-                              static_cast<float>(m_ClothSize.x), static_cast<float>(m_ClothSize.y));
+                              static_cast<float>(m_AmmoPicSize.x), static_cast<float>(m_AmmoPicSize.y));
         SetRectangleVertexPos(&pV[40], static_cast<float>(m_TurnPos.x), static_cast<float>(m_TurnPos.y),
-                              static_cast<float>(m_TurnSize.x), static_cast<float>(m_TurnSize.y));
+                              static_cast<float>(m_PerksPicSize.x), static_cast<float>(m_PerksPicSize.y));
         SetRectangleVertexPos(&pV[44], static_cast<float>(m_ImmReloadPos.x), static_cast<float>(m_ImmReloadPos.y),
-                              static_cast<float>(m_ImmReloadSize.x), static_cast<float>(m_ImmReloadSize.y));
+                              static_cast<float>(m_PerksPicSize.x), static_cast<float>(m_PerksPicSize.y));
         SetRectangleVertexPos(&pV[48], static_cast<float>(m_InstantRepPos.x), static_cast<float>(m_InstantRepPos.y),
-                              static_cast<float>(m_InstantRepSize.x), static_cast<float>(m_InstantRepSize.y));
+                              static_cast<float>(m_PerksPicSize.x), static_cast<float>(m_PerksPicSize.y));
         SetRectangleVertexPos(&pV[52], static_cast<float>(m_LightRepPos.x), static_cast<float>(m_LightRepPos.y),
-                              static_cast<float>(m_LightRepSize.x), static_cast<float>(m_LightRepSize.y));
+                              static_cast<float>(m_PerksPicSize.x), static_cast<float>(m_PerksPicSize.y));
         rs->UnLockVertexBuffer(m_idCurChargeVBuf);
     }
 }
@@ -1387,18 +1217,8 @@ void BATTLE_NAVIGATOR::ReleaseAll()
     TEXTURE_RELEASE(rs, m_idWindTexture);
     TEXTURE_RELEASE(rs, m_idSailTexture);
     // HardCoffee bottomBar icons -->
-    TEXTURE_RELEASE(rs, m_idBallsTexture);
-    TEXTURE_RELEASE(rs, m_idGrapesTexture);
-    TEXTURE_RELEASE(rs, m_idKnippelsTexture);
-    TEXTURE_RELEASE(rs, m_idBombsTexture);
-    TEXTURE_RELEASE(rs, m_idPowderTexture);
-    TEXTURE_RELEASE(rs, m_idWeaponTexture);
-    TEXTURE_RELEASE(rs, m_idPlanksTexture);
-    TEXTURE_RELEASE(rs, m_idClothTexture);
-    TEXTURE_RELEASE(rs, m_idTurnTexture);
-    TEXTURE_RELEASE(rs, m_idImmReloadTexture);
-    TEXTURE_RELEASE(rs, m_idInstantRepTexture);
-    TEXTURE_RELEASE(rs, m_idLightRepTexture);
+    TEXTURE_RELEASE(rs, m_idAmmoTexture);
+    TEXTURE_RELEASE(rs, m_idPerksTexture);
     //bottomBar icons <--
 
     if (m_pIslandTexture != nullptr)
@@ -1838,7 +1658,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[7].tu = texRect.right;
         pV[7].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curBalls, m_BallsGreed.x, m_BallsGreed.y);
+        CalculateTextureRect(texRect, m_curBalls, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[8].tu = texRect.left;
         pV[8].tv = texRect.top;
         pV[9].tu = texRect.left;
@@ -1848,7 +1668,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[11].tu = texRect.right;
         pV[11].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curGrapes, m_GrapesGreed.x, m_GrapesGreed.y);
+        CalculateTextureRect(texRect, m_curGrapes, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[12].tu = texRect.left;
         pV[12].tv = texRect.top;
         pV[13].tu = texRect.left;
@@ -1858,7 +1678,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[15].tu = texRect.right;
         pV[15].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curKnippels, m_KnippelsGreed.x, m_KnippelsGreed.y);
+        CalculateTextureRect(texRect, m_curKnippels, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[16].tu = texRect.left;
         pV[16].tv = texRect.top;
         pV[17].tu = texRect.left;
@@ -1868,7 +1688,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[19].tu = texRect.right;
         pV[19].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curBombs, m_BombsGreed.x, m_BombsGreed.y);
+        CalculateTextureRect(texRect, m_curBombs, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[20].tu = texRect.left;
         pV[20].tv = texRect.top;
         pV[21].tu = texRect.left;
@@ -1878,7 +1698,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[23].tu = texRect.right;
         pV[23].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curPowder, m_PowderGreed.x, m_PowderGreed.y);
+        CalculateTextureRect(texRect, m_curPowder, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[24].tu = texRect.left;
         pV[24].tv = texRect.top;
         pV[25].tu = texRect.left;
@@ -1888,7 +1708,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[27].tu = texRect.right;
         pV[27].tv = texRect.bottom;
         
-        CalculateTextureRect(texRect, m_curWeapon, m_WeaponGreed.x, m_WeaponGreed.y);
+        CalculateTextureRect(texRect, m_curWeapon, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[28].tu = texRect.left;
         pV[28].tv = texRect.top;
         pV[29].tu = texRect.left;
@@ -1898,7 +1718,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[31].tu = texRect.right;
         pV[31].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curPlanks, m_PlanksGreed.x, m_PlanksGreed.y);
+        CalculateTextureRect(texRect, m_curPlanks, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[32].tu = texRect.left;
         pV[32].tv = texRect.top;
         pV[33].tu = texRect.left;
@@ -1908,7 +1728,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[35].tu = texRect.right;
         pV[35].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curCloth, m_ClothGreed.x, m_ClothGreed.y);
+        CalculateTextureRect(texRect, m_curCloth, m_AmmoTexGreed.x, m_AmmoTexGreed.y);
         pV[36].tu = texRect.left;
         pV[36].tv = texRect.top;
         pV[37].tu = texRect.left;
@@ -1918,7 +1738,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[39].tu = texRect.right;
         pV[39].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curTurn, m_TurnGreed.x, m_TurnGreed.y);
+        CalculateTextureRect(texRect, m_curTurn, m_PerksTexGreed.x, m_PerksTexGreed.y);
         pV[40].tu = texRect.left;
         pV[40].tv = texRect.top;
         pV[41].tu = texRect.left;
@@ -1928,7 +1748,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[43].tu = texRect.right;
         pV[43].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curImmReload, m_ImmReloadGreed.x, m_ImmReloadGreed.y);
+        CalculateTextureRect(texRect, m_curImmReload, m_PerksTexGreed.x, m_PerksTexGreed.y);
         pV[44].tu = texRect.left;
         pV[44].tv = texRect.top;
         pV[45].tu = texRect.left;
@@ -1938,7 +1758,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[47].tu = texRect.right;
         pV[47].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curInstantRep, m_InstantRepGreed.x, m_InstantRepGreed.y);
+        CalculateTextureRect(texRect, m_curInstantRep, m_PerksTexGreed.x, m_PerksTexGreed.y);
         pV[48].tu = texRect.left;
         pV[48].tv = texRect.top;
         pV[49].tu = texRect.left;
@@ -1948,7 +1768,7 @@ void BATTLE_NAVIGATOR::UpdateCurrentCharge()
         pV[51].tu = texRect.right;
         pV[51].tv = texRect.bottom;
 
-        CalculateTextureRect(texRect, m_curLightRep, m_LightRepGreed.x, m_LightRepGreed.y);
+        CalculateTextureRect(texRect, m_curLightRep, m_PerksTexGreed.x, m_PerksTexGreed.y);
         pV[52].tu = texRect.left;
         pV[52].tv = texRect.top;
         pV[53].tu = texRect.left;
