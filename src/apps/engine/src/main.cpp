@@ -1,6 +1,8 @@
 #include <thread>
 
 #include <SDL2/SDL.h>
+#include <mimalloc-new-delete.h>
+#include <mimalloc.h>
 #include <spdlog/spdlog.h>
 
 #include "core_private.h"
@@ -53,6 +55,29 @@ void RunFrameWithOverflowCheck()
 #define RunFrameWithOverflowCheck RunFrame
 #endif
 
+void mimalloc_fun(const char *msg, void *arg)
+{
+    static std::filesystem::path mimalloc_log_path;
+    if (mimalloc_log_path.empty())
+    {
+        mimalloc_log_path = fs::GetLogsPath() / "mimalloc.log";
+        std::error_code ec;
+        remove(mimalloc_log_path, ec);
+    }
+
+    FILE *mimalloc_log =
+#ifdef _MSC_VER
+        _wfopen(mimalloc_log_path.c_str(), L"a+b");
+#else
+        fopen(mimalloc_log_path.c_str(), "a+b");
+#endif
+    if (mimalloc_log != nullptr)
+    {
+        fputs(msg, mimalloc_log);
+        fclose(mimalloc_log);
+    }
+}
+
 } // namespace
 
 void HandleWindowEvent(const storm::OSWindow::Event &event)
@@ -104,6 +129,19 @@ int main(int argc, char *argv[])
         return EXIT_SUCCESS;
     }
 #endif
+    mi_register_output(mimalloc_fun, nullptr);
+    mi_option_set(mi_option_show_errors, 1);
+    mi_option_set(mi_option_show_stats, 0);
+    mi_option_set(mi_option_eager_commit, 1);
+    mi_option_set(mi_option_eager_region_commit, 1);
+    mi_option_set(mi_option_large_os_pages, 1);
+    mi_option_set(mi_option_page_reset, 0);
+    mi_option_set(mi_option_segment_reset, 0);
+    mi_option_set(mi_option_reserve_huge_os_pages, 1);
+    mi_option_set(mi_option_segment_cache, 16);
+#ifdef _DEBUG
+    mi_option_set(mi_option_verbose, 4);
+#endif
 
     SDL_InitSubSystem(SDL_INIT_EVENTS | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
 
@@ -129,6 +167,7 @@ int main(int argc, char *argv[])
     // Init logging
     spdlog::set_default_logger(storm::logging::getOrCreateLogger(defaultLoggerName));
     spdlog::info("Logging system initialized. Running on {}", STORM_BUILD_WATERMARK_STRING);
+    spdlog::info("mimalloc-redirect status: {}", mi_is_redirected());
 
     // Init core
     core_private = static_cast<CorePrivate *>(&core);
@@ -216,6 +255,12 @@ int main(int argc, char *argv[])
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
+
+        if (core.Controls && core.Controls->GetDebugAsyncKeyState(VK_F1) && core.Controls->GetDebugAsyncKeyState(VK_SHIFT))
+        {
+            mi_stats_print_out(mimalloc_fun, nullptr);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 
     // Release
@@ -224,6 +269,8 @@ int main(int argc, char *argv[])
     core_private->ReleaseBase();
 #ifdef _WIN32 // FIX_LINUX Cursor
     ClipCursor(nullptr);
+#elif _DEBUG
+    mi_option_set(mi_option_verbose, 0); // disable statistics writing in Linux
 #endif
     SDL_Quit();
 
