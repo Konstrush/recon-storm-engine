@@ -135,10 +135,10 @@ int main(int argc, char *argv[])
     mi_option_set(mi_option_eager_commit, 1);
     mi_option_set(mi_option_eager_region_commit, 1);
     mi_option_set(mi_option_large_os_pages, 1);
-    mi_option_set(mi_option_page_reset, 0);
-    mi_option_set(mi_option_segment_reset, 0);
+    //mi_option_set(mi_option_page_reset, 0);
+    //mi_option_set(mi_option_segment_reset, 0);
     mi_option_set(mi_option_reserve_huge_os_pages, 1);
-    mi_option_set(mi_option_segment_cache, 16);
+    //mi_option_set(mi_option_segment_cache, 16);
 #ifdef _DEBUG
     mi_option_set(mi_option_verbose, 4);
 #endif
