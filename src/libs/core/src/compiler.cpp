@@ -19,6 +19,7 @@
 #include <SDL_timer.h>
 #include <unordered_map>
 
+
 #define SKIP_COMMENT_TRACING
 #define TRACE_OFF
 #define INVALID_SEGMENT_INDEX 0xffffffff
@@ -29,6 +30,8 @@
 #define DSL_INI_VALUE 0
 #define SBUPDATE 4
 #define DEF_COMPILE_EXPRESSIONS
+
+constexpr auto MAGIC_VAR_CODE = 0xffffffaa;
 
 #ifdef _WIN32 // S_DEBUG
 namespace
@@ -605,7 +608,7 @@ void COMPILER::FindErrorSource()
     } while (Token_type != END_OF_PROGRAMM);
 }
 
-void COMPILER::SetEventHandler(const char *event_name, const char *func_name, int32_t flag, bool bStatic)
+void COMPILER::SetEventHandler(ATTRIBUTES * pObject, const char *event_name, const char *func_name, int32_t flag, bool bStatic)
 {
     FuncInfo fi;
 
@@ -629,14 +632,24 @@ void COMPILER::SetEventHandler(const char *event_name, const char *func_name, in
 
     if (!FuncTab.GetFunc(fi, func_code))
     {
-        SetError("func not found eror");
+        SetError("func not found error");
         return;
     }
 
-    EventTab.AddEventHandler(event_name, func_code, fi.segment_id, flag, bStatic);
+    auto format = EventTab.GetEventFormat(event_name);
+    if (format.has_value())
+    {
+        if (fi.arguments != format.value().size())
+        {
+            SetError("Function handler (%s) has %u arguments, but '%s' event expects %u", func_name,
+                     (unsigned)fi.arguments, event_name, format.value().size());
+        }
+    }
+
+    EventTab.AddEventHandler(pObject, event_name, func_code, fi.segment_id, flag, bStatic);
 }
 
-void COMPILER::DelEventHandler(const char *event_name, const char *func_name)
+void COMPILER::DelEventHandler(ATTRIBUTES *pObject, const char *event_name, const char *func_name)
 {
     if (event_name == nullptr)
     {
@@ -657,22 +670,27 @@ void COMPILER::DelEventHandler(const char *event_name, const char *func_name)
         return;
     }
 
-    EventTab.SetStatus(event_name, func_code, FSTATUS_DELETED);
+    EventTab.SetStatus(pObject, event_name, func_code, FSTATUS_DELETED);
 
-    for (int32_t n = 0; n < static_cast<int32_t>(EventMsg.GetClassesNum()); n++)
+    if constexpr (false)
     {
-        S_EVENTMSG *pM = EventMsg.Read(n);
-        if (!pM->pEventName)
-            continue;
-        if (pM->ProcessTime(0))
-            continue; // skip events, possible executed on this frame
-        if (storm::iEquals(pM->pEventName, event_name))
+        for (int32_t n = 0; n < static_cast<int32_t>(EventMsg.GetClassesNum()); n++)
         {
-            EventMsg.Del(n);
-            n--;
+            S_EVENTMSG *pM = EventMsg.Read(n);
+            if (!pM->pEventName)
+                continue;
+            if (pM->ProcessTime(0))
+                continue; // skip events, possible executed on this frame
+            if (storm::iEquals(pM->pEventName, event_name))
+            {
+                EventMsg.Del(n);
+                n--;
+            }
         }
     }
+    
 }
+
 
 VDATA *COMPILER::ProcessEvent(const char *event_name)
 {
@@ -684,8 +702,6 @@ VDATA *COMPILER::ProcessEvent(const char *event_name)
     uint32_t event_code;
     uint32_t func_code;
     VDATA *pVD;
-    DATA *pResult;
-    MESSAGE *pMem;
     EVENTINFO ei;
 #ifdef _WIN32 // S_DEBUG
     uint32_t current_debug_mode;
@@ -713,58 +729,20 @@ VDATA *COMPILER::ProcessEvent(const char *event_name)
     if (event_code == INVALID_EVENT_CODE)
         return nullptr; // no handlers
     EventTab.GetEvent(ei, event_code);
-    for (uint32_t n = 0; n < ei.elements; n++)
+
+    pVD = ProcessEventFunctions(ei.pFuncInfo, event_code, pEventMessage, nTicks);
+
+    if (pEventMessage)
     {
-        func_code = ei.pFuncInfo[n].func_code;
-        if (ei.pFuncInfo[n].status != FSTATUS_NORMAL)
-            continue;
-        pMem = pEventMessage;
-        if (pMem)
+        auto objPtr = pEventMessage->GetThisObject();
+        if (objPtr)
         {
-            pMem->Move2Start();
-        }
-
-        const uint32_t nStackVars = SStack.GetDataNum(); // remember stack elements num
-        RDTSC_B(nTicks);
-        BC_Execute(ei.pFuncInfo[n].func_code, pResult);
-        RDTSC_E(nTicks);
-
-        FuncInfo fi;
-        // if(FuncTab.GetFuncX(fi,ei.pFuncInfo[n].func_code))
-        if (FuncTab.GetFuncX(fi, func_code))
-        {
-            if (fi.return_type != TVOID)
+            auto it = ei.pFuncInfoForObjects.find(objPtr);
+            if (it != ei.pFuncInfoForObjects.end())
             {
-                fi.return_type = TVOID;
-            }
-        } //*/
-
-        if (EventTab.GetEvent(ei, event_code)) // to be sure event still exist
-        {
-            if (n < ei.elements)
-            {
-                if (!FuncTab.AddTime(ei.pFuncInfo[n].func_code, nTicks))
-                {
-                    core_internal.Trace("Invalid func_code = %u for AddTime", ei.pFuncInfo[n].func_code);
-                }
+                pVD = ProcessEventFunctions(it->second, event_code, pEventMessage, nTicks);
             }
         }
-
-        pEventMessage = pMem;
-        if (pResult)
-            pVD = pResult->GetVarPointer();
-        if (pResult)
-            SStack.Pop();
-
-        if (nStackVars != SStack.GetDataNum())
-        {
-            SStack.InvalidateFrom(nStackVars); // restore stack state - crash situation
-            pVD = nullptr;
-            SetError("process event stack error");
-        }
-
-        if (bEventsBreak)
-            break;
     }
 
     nTimeOnEvent = SDL_GetTicks() - nTimeOnEvent;
@@ -786,6 +764,95 @@ VDATA *COMPILER::ProcessEvent(const char *event_name)
         core_internal.Controls->GetDebugAsyncKeyState(VK_SHIFT) < 0)
     {
         core_internal.Trace("evnt: %d, %s", dwRDTSC, event_name);
+    }
+
+    return pVD;
+}
+
+VDATA *COMPILER::ProcessEventFunctions(std::vector<EVENT_FUNC_INFO> &eventFuncVec, uint32_t event_code, MESSAGE *pMem,
+                                       uint64_t &nTicks)
+{
+    VDATA *pVD = nullptr;
+    for (uint32_t n = 0; n < eventFuncVec.size(); n++)
+    {
+        if (eventFuncVec[n].status != FSTATUS_NORMAL)
+            continue;
+        pVD = ProcessEventFunc(eventFuncVec, n, event_code, pMem, nTicks);
+        if (bEventsBreak)
+            break;
+    }
+    return pVD;
+}
+
+VDATA *COMPILER::ProcessEventFunc(std::vector<EVENT_FUNC_INFO> &eventFuncVec, uint32_t func_idx, uint32_t event_code, MESSAGE *pMem,
+                                  uint64_t &nTicks)
+{
+    DATA *pResult = nullptr;
+    VDATA *pVD = nullptr; 
+    if (pMem)
+    {
+        pMem->Move2Start();
+    }
+
+    FuncInfo fi;
+    // if(FuncTab.GetFuncX(fi,ei.pFuncInfo[n].func_code))
+    if (FuncTab.GetFuncX(fi, eventFuncVec[func_idx].func_code))
+    {
+        if (fi.return_type != TVOID)
+        {
+            fi.return_type = TVOID;
+        }
+    } //*/
+
+    const uint32_t nStackVars = SStack.GetDataNum(); // remember stack elements num
+
+    EVENTINFO ei;
+    if (!EventTab.GetEvent(ei, event_code)) // to be sure event still exist
+    {
+        return nullptr;
+    }
+
+    if (pMem && fi.arguments > 0)
+    {
+        auto msgParamCount = pMem->GetParametersCount();
+        if (fi.arguments > msgParamCount)
+        {
+            SetError("Too many parameters in function '%s' for handle event '%s'", fi.name.c_str(), ei.name);
+            return nullptr;
+        }
+        for (size_t i = 0; i < msgParamCount; i++)
+        {
+            auto pD = SStack.Push();
+            pMem->GetData(pD, this);
+        }
+    }
+    RDTSC_B(nTicks);
+    BC_Execute(eventFuncVec[func_idx].func_code, pResult);
+    RDTSC_E(nTicks);
+
+
+    if (EventTab.GetEvent(ei, event_code)) // to be sure event still exist
+    {
+        if (1 < eventFuncVec.size())
+        {
+            if (!FuncTab.AddTime(eventFuncVec[func_idx].func_code, nTicks))
+            {
+                core_internal.Trace("Invalid func_code = %u for AddTime", eventFuncVec[func_idx].func_code);
+            }
+        }
+    }
+
+    pEventMessage = pMem;
+    if (pResult)
+        pVD = pResult->GetVarPointer();
+    if (pResult)
+        SStack.Pop();
+
+    if (nStackVars != SStack.GetDataNum())
+    {
+        SStack.InvalidateFrom(nStackVars); // restore stack state - crash situation
+        pVD = nullptr;
+        SetError("process event stack error");
     }
 
     return pVD;
@@ -2239,7 +2306,7 @@ bool COMPILER::CompileBlock(SEGMENT_DESC &Segment, bool &bFunctionBlock, uint32_
                     return false;
                 }
                 // SetEventHandler(gs,Token.GetData(),1,true);
-                SetEventHandler(gs, Token.GetData(), 0, true);
+                SetEventHandler(nullptr, gs, Token.GetData(), 0, true);
                 if (script_cache_mode_ != kCacheDisabled)
                 {
                     script_cache_.event_handlers.emplace_back(storm::script_cache::EventHandler{gs, Token.GetData()});
@@ -6400,14 +6467,34 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
             ReadAttributesData(pTA, nullptr);
             delete pTA;
         }
+
         break;
     case VAR_REFERENCE:
         var_index = ReadVDword();
         if (var_index == 0xffffffff)
             break; // uninitialized ref
+
         array_index = ReadVDword();
+        
+
+        if (var_index == MAGIC_VAR_CODE) // new format
+        {
+            pString = ReadString();
+            var_index = VarTab.FindVar(pString);
+            if (var_index == INVALID_VAR_CODE)
+            {
+                SetError("Load - unknown variable '%s'", pString);
+                delete[] pString;
+                return false;
+            }
+            if (bSkipVariable)
+                delete[] pString;
+            pString = nullptr;
+        }
+
         if (bSkipVariable)
             break;
+
         real_var_ref = VarTab.GetVarX(var_index);
         if (real_var_ref == nullptr)
         {
@@ -6428,6 +6515,23 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
         if (var_index == 0xffffffff)
             break;
         array_index = ReadVDword();
+        
+
+        if (var_index == MAGIC_VAR_CODE) // new format
+        {
+            pString = ReadString();
+            var_index = VarTab.FindVar(pString);
+            if (var_index == INVALID_VAR_CODE)
+            {
+                SetError("Load - unknown variable '%s'", pString);
+                delete[] pString;
+                return false;
+            }
+            if (bSkipVariable)
+                delete[] pString;
+            pString = nullptr;
+        }
+
         pString = ReadString();
         if (bSkipVariable)
         {
@@ -6551,9 +6655,26 @@ void COMPILER::SaveVariable(DATA *pV, bool bdim)
             WriteVDword(0xffffffff);
             return;
         }
+        
+        if constexpr (true)
+        {
+            auto pvi = VarTab.GetVarX(var_index);
+            if (!pvi)
+            {
+                SetError("Unknown variable %u", var_index);
+                return;
+            }
 
-        WriteVDword(var_index);
-        WriteVDword(array_index);
+            //write magic code to differ from the old format
+            WriteVDword(MAGIC_VAR_CODE);
+            WriteVDword(array_index);
+            SaveString(pvi->name.c_str());
+        }
+        else
+        {
+            WriteVDword(var_index);
+            WriteVDword(array_index);
+        }
 
         break;
     case VAR_AREFERENCE:
@@ -6585,8 +6706,25 @@ void COMPILER::SaveVariable(DATA *pV, bool bdim)
             delete[] pString;
             break;
         }
-        WriteVDword(var_index);
-        WriteVDword(array_index);
+        if constexpr (true)
+        {
+            auto pvi = VarTab.GetVarX(var_index);
+            if (!pvi)
+            {
+                SetError("Unknown variable %u", var_index);
+                return;
+            }
+
+            // write magic code to differ from the old format
+            WriteVDword(MAGIC_VAR_CODE);
+            WriteVDword(array_index);
+            SaveString(pvi->name.c_str());
+        }
+        else
+        {
+            WriteVDword(var_index);
+            WriteVDword(array_index);
+        }
         SaveString(pString);
         delete[] pString;
         break;
@@ -6601,6 +6739,114 @@ bool COMPILER::OnLoad()
     return true;
 }
 
+void COMPILER::PrepareEventsToSaving()
+{
+    VarIndex varIndex = CollectAttributeIndex();
+
+    VarInfo vi;
+    vi.name = "__eventsData";
+    vi.type = S_TOKEN_TYPE::VAR_OBJECT;
+    vi.segment_id = 0;
+    vi.elements = 1;
+    
+    size_t idx = VarTab.FindVar(vi.name);
+    if (idx == INVALID_VAR_CODE)
+    {
+        idx = VarTab.AddVar(vi);
+    }
+
+    auto pvi = VarTab.GetVarX(idx);
+    if (!pvi)
+    {
+        spdlog::error("error during writting event record");
+        return;
+    }
+    auto oldAtt = pvi->value->AttributesClass;
+    if (oldAtt)
+    {
+        delete oldAtt;
+    }
+    pvi->value->AttributesClass = new ATTRIBUTES(GetVSC());
+    EventTab.StoreEventsData(pvi->value->AttributesClass, FuncTab, varIndex);
+    EventMsg.StoreEventsData(pvi->value->AttributesClass, varIndex);
+    return;
+}
+
+void COMPILER::PrepareEventsBeforeLoading()
+{
+    VarInfo vi;
+    vi.name = "__eventsData";
+    vi.type = S_TOKEN_TYPE::VAR_OBJECT;
+    vi.segment_id = 0;
+    vi.elements = 1;
+    VarTab.AddVar(vi);
+}
+
+void COMPILER::PrepareEventsAfterLoading()
+{
+    auto idx = VarTab.FindVar("__eventsData");
+    if (idx == INVALID_VAR_CODE)
+    {
+        spdlog::error("no event data available");
+        return;
+    }
+    auto info = VarTab.GetVar(idx);
+
+    if (!info->value->AttributesClass)
+    {
+        spdlog::error("wrong event record");
+        return;
+    }
+
+    EventTab.LoadEventsData(info->value->AttributesClass, FuncTab, VarTab);
+    EventMsg.LoadEventsData(info->value->AttributesClass, VarTab);
+}
+
+VarIndex COMPILER::CollectAttributeIndex() const
+{
+    std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> result;
+    const uint32_t nVarNum = VarTab.GetVarNum();
+
+    for (size_t n = 0; n < nVarNum; n++)
+    {
+        const VarInfo *real_var = VarTab.GetVar(n);
+        if (real_var == nullptr)
+        {
+            continue;
+        }
+
+        std::vector<size_t> indexVector;
+        CollectAttributeIndexStep(real_var->value.get(), real_var->name, indexVector, result);
+    }
+
+    return result;
+}
+void COMPILER::CollectAttributeIndexStep(DATA *pV, const std::string &varName, std::vector<size_t> &indexVector,  VarIndex &result) const
+{
+    if (pV == nullptr)
+    {
+        return;
+    }
+
+    if (pV->IsArray())
+    {
+        for (size_t n = 0; n < pV->GetElementsNum(); n++)
+        {
+            // Потенциальная потеря производительности, если упремся - заменим на стек
+            std::vector<size_t> curIndexVector = indexVector;
+            curIndexVector.push_back(n);
+            CollectAttributeIndexStep(pV->GetArrayElement(n), varName, curIndexVector, result);
+        }
+        return;
+    }
+
+    if (pV->GetType() == VAR_OBJECT)
+    {
+        result[pV->AttributesClass] = std::pair<std::string, std::vector<size_t>>(varName, indexVector);
+    }
+}
+
+
 bool COMPILER::SaveState(std::fstream &fileS)
 {
     uint32_t n;
@@ -6614,6 +6860,8 @@ bool COMPILER::SaveState(std::fstream &fileS)
     const uint32_t function_code = FuncTab.FindFunc("OnSave");
     if (function_code != INVALID_FUNC_CODE)
         BC_Execute(function_code, pResult);
+
+    PrepareEventsToSaving();
 
     EXTDATA_HEADER edh;
     auto *pVDat = static_cast<VDATA *>(core_internal.GetScriptVariable("savefile_info"));
@@ -6764,7 +7012,7 @@ bool COMPILER::LoadState(std::fstream &fileS)
             return false;
         delete[] pSegmentName;
     }
-
+    PrepareEventsBeforeLoading();
     // 5. Variables table, all variables created during previous step, just read value
     const uint32_t nVarNum = ReadVDword();
     for (n = 0; n < nVarNum; n++)
@@ -6776,13 +7024,13 @@ bool COMPILER::LoadState(std::fstream &fileS)
             return false;
         }
         ReadVariable(pString /*,n*/);
-
+        
         delete[] pString;
     }
-
+    PrepareEventsAfterLoading();
     // call to script function "OnLoad()"
     OnLoad();
-
+    EventMsg.FixEnitiyIDs();
     delete[] pBuffer;
     pBuffer = nullptr;
 
@@ -6819,7 +7067,7 @@ void COMPILER::ReadAttributesData(ATTRIBUTES *pRoot, ATTRIBUTES *pParent)
     nNameCode = ReadVDword();
     pValue = ReadString();
     // pRoot->SetAttribute(nNameCode,pValue);
-
+    
     pRoot->SetNameCode(nNameCode);
     pRoot->SetValue(pValue);
 
@@ -7411,7 +7659,7 @@ void COMPILER::LoadEventHandlersFromCache(storm::script_cache::BufferReader &rea
         auto event = std::string(reader.ReadArray());
         auto name = std::string(reader.ReadArray());
 
-        SetEventHandler(event.c_str(), name.c_str(), 0, true);
+        SetEventHandler(nullptr, event.c_str(), name.c_str(), 0, true);
     }
 }
 
@@ -8021,4 +8269,9 @@ void STRING_CODEC::VariableChanged()
 #ifdef _WIN32 // S_DEBUG
     CDebug->SetTraceMode(TMODE_MAKESTEP);
 #endif
+}
+
+void COMPILER::SetEventFormat(const char *eventName, std::string format)
+{
+    EventTab.SetEventFormat(eventName, format);
 }

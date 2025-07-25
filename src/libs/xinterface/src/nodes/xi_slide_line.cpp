@@ -336,6 +336,6 @@ void CXI_SLIDELINE::SetNewValue(int32_t newValue)
         pA = pA->GetAttributeClass(m_nodeName);
     if (pA != nullptr)
         pA->SetAttributeUseFloat("value", static_cast<float>(m_nCurValue) / m_nGrateQuantity);
-    core.PostEvent("eSlideChange", 0, "slf", m_nodeName, m_nCurValue,
+    core.PostEvent(nullptr, "eSlideChange", 0, "slf", m_nodeName, m_nCurValue,
                    static_cast<float>(m_nCurValue) / m_nGrateQuantity);
 }

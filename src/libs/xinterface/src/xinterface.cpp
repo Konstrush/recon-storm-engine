@@ -1203,7 +1203,7 @@ void XINTERFACE::LoadDialog(const char *sFileName)
     if (!ini)
     {
         core.Trace("ini file %s not found!", sFileName);
-        core.PostEvent("exitCancel", 1, nullptr);
+        core.PostEvent(nullptr, "exitCancel", 1, nullptr);
         return;
     }
     auto ownerIni = fio->OpenIniFile("RESOURCE\\INI\\INTERFACES\\defaultnode.ini");

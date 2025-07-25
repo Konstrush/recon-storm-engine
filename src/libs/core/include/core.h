@@ -70,7 +70,6 @@ class Core
     virtual void Entity_SetAttributePointer(entid_t id_PTR, ATTRIBUTES *pA) = 0;
     virtual uint32_t Entity_AttributeChanged(entid_t id_PTR, ATTRIBUTES *) = 0;
     virtual ATTRIBUTES *Entity_GetAttributePointer(entid_t id_PTR) = 0;
-
     // send message to an object
     virtual uint64_t Send_Message(entid_t Destination, const char *Format, ...) = 0;
 
@@ -95,7 +94,7 @@ class Core
         return Event(event_name, message);
     }
     virtual VDATA *Event(const std::string_view &event_name, MESSAGE &message) = 0;
-    virtual uint32_t PostEvent(const char *Event_name, uint32_t post_time, const char *Format, ...) = 0;
+    virtual uint32_t PostEvent(ATTRIBUTES * pObject, const char *Event_name, uint32_t post_time, const char *Format, ...) = 0;
 
     virtual void *GetSaveData(const char *file_name, int32_t &data_size) = 0;
 

@@ -113,6 +113,11 @@ enum FUNCTION_CODE
     FUNC_CHECKFUNCTION,
     FUNC_GETENGINEVERSION,
     FUNC_SORT,
+    FUNC_SET_EVENT_HANDLER_FOR_OBJECT,
+    FUNC_DEL_EVENT_HANDLER_FOR_OBJECT,
+    FUNC_EVENT_FOR_OBJECT,
+    FUNC_POSTEVENT_FOR_OBJECT,
+    FUNC_SET_EVENT_FORMAT
 };
 
 INTFUNCDESC IntFuncTable[] = {
@@ -145,7 +150,12 @@ INTFUNCDESC IntFuncTable[] = {
     VAR_INTEGER, 1, "FindEntityNext", VAR_INTEGER, 2, "GetSymbol", VAR_STRING, 2, "IsDigit", VAR_INTEGER, 2,
     "SaveVariable", VAR_INTEGER, 2, "LoadVariable", VAR_INTEGER, 2, "SetControlTreshold", TVOID, 2, "LockControl",
     TVOID, 1, "TestRef", VAR_INTEGER, 1, "SetTimeScale", TVOID, 1, "CheckFunction", VAR_INTEGER, 0, "GetEngineVersion",
-    VAR_INTEGER, 1, "sort", TVOID};
+    VAR_INTEGER, 1, "sort", TVOID,
+    4, "SetEventHandlerForObject",  TVOID, 
+    3, "DelEventHandlerForObject", TVOID, 
+    0, "EventForObject", TVOID, 
+    0, "PostEventForObject", TVOID, 
+    2, "SetEventFormat", TVOID};
 
 /*
 char * FuncNameTable[]=
@@ -367,6 +377,8 @@ bool COMPILER::IsIntFuncVarArgsNum(uint32_t code)
     case FUNC_SEND_MESSAGE:
     case FUNC_EVENT:
     case FUNC_POSTEVENT:
+    case FUNC_EVENT_FOR_OBJECT:
+    case FUNC_POSTEVENT_FOR_OBJECT:
 
         return true;
     }
@@ -425,9 +437,11 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
     Entity *pE;
     MESSAGE ms;
     uint32_t s_off;
-    
+    int shift;
     static std::remove_reference_t<entity_container_cref>::const_iterator entity_iterator;
     static std::remove_reference_t<entity_container_cref>::const_iterator entity_iterator_end;
+    std::optional<std::string> format = std::nullopt;
+    std::string currentFormat;
 
     pResult = nullptr;
     TempFloat1 = 0;
@@ -438,7 +452,7 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
     int32_t slen, slen2;
     char sVarName[64];
     std::string utf8_character;
-
+    bool variadicHasAnError = false;
     switch (func_code)
     {
     case FUNC_GETENGINEVERSION:
@@ -1628,6 +1642,7 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         core.EraseEntity(ent);
         break;
         //
+    case FUNC_DEL_EVENT_HANDLER_FOR_OBJECT:
     case FUNC_DEL_EVENT_HANDLER:
         pV2 = SStack.Pop();
         if (!pV2)
@@ -1643,8 +1658,34 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         }
         pV->Get(pChar);
         pV2->Get(pChar2);
-        DelEventHandler(pChar, pChar2);
+
+        pA = nullptr;
+        if (func_code == FUNC_DEL_EVENT_HANDLER_FOR_OBJECT)
+        {
+            pV3 = SStack.Pop();
+            if (!pV3)
+            {
+                SetError(INVALID_FA);
+                break;
+            }
+            pV3 = pV3->GetVarPointer();
+            if (pV3->GetType() != VAR_OBJECT)
+            {
+                SetError(BAD_FA);
+                break;
+            }
+            pA = pV3->GetAClass();
+            if (pA == nullptr)
+            {
+                SetError("AClass ERROR n1");
+                break;
+            }
+        }
+
+
+        DelEventHandler(nullptr, pChar, pChar2);
         break;
+    case FUNC_SET_EVENT_HANDLER_FOR_OBJECT:
     case FUNC_SET_EVENT_HANDLER:
         pV3 = SStack.Pop();
         if (!pV3)
@@ -1667,7 +1708,30 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         pV->Get(pChar);
         pV2->Get(pChar2);
         pV3->Get(TempLong1);
-        SetEventHandler(pChar, pChar2, TempLong1);
+        pA = nullptr;
+        if (func_code == FUNC_SET_EVENT_HANDLER_FOR_OBJECT)
+        {
+            pV4 = SStack.Pop();
+            if (!pV4)
+            {
+                SetError(INVALID_FA);
+                break;
+            }
+            pV4 = pV4->GetVarPointer();
+            if (pV4->GetType() != VAR_OBJECT)
+            {
+                SetError(BAD_FA);
+                break;
+            }
+            pA = pV4->GetAClass();
+            if (pA == nullptr)
+            {
+                SetError("AClass ERROR n1");
+                break;
+            }
+        }
+
+        SetEventHandler(pA, pChar, pChar2, TempLong1);
         break;
         //
     case FUNC_EXIT_PROGRAM:
@@ -1681,58 +1745,10 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
             SetError("No data on this event");
             return nullptr;
         }
-        char format_sym;
-        format_sym = pEventMessage->GetCurrentFormatType();
-        if (format_sym == 0)
-        {
-            SetError("No (more) data on this event");
-            return nullptr;
-        }
-        switch (format_sym)
-        {
-        case 'a':
-            pResult = SStack.Push();
-            pResult->SetType(VAR_AREFERENCE);
-            pResult->SetAReference(pEventMessage->AttributePointer());
-            pVResult = pResult;
-            return pResult;
-        case 'l':
-            pResult = SStack.Push();
-            pResult->Set(pEventMessage->Long());
-            pVResult = pResult;
-            return pResult;
-        case 'f':
-            pResult = SStack.Push();
-            pResult->Set(pEventMessage->Float());
-            pVResult = pResult;
-            return pResult;
-        case 's':
-            pResult = SStack.Push();
-            Message_string = pEventMessage->String();
-            pResult->Set(Message_string.c_str());
-            pVResult = pResult;
-            return pResult;
-        case 'i':
-            pResult = SStack.Push();
-            pResult->SetType(VAR_AREFERENCE);
-            ent = pEventMessage->EntityID();
-            pResult->Set(ent);
-            pResult->SetAReference(core_internal.Entity_GetAttributePointer(ent));
-
-            pVResult = pResult;
-            return pResult;
-        case 'e':
-            pResult = SStack.Push();
-            DATA *pE;
-            pE = static_cast<DATA *>(pEventMessage->ScriptVariablePointer());
-            pResult->SetReference(pE);
-            pVResult = pResult;
-            return pResult;
-        default:
-            SetError("Invalid data type in event message: '%c'", format_sym);
-            return nullptr;
-        }
-        break;
+        pResult = SStack.Push();
+        pEventMessage->GetData(pResult, this);
+        pVResult = pResult;
+        return pResult;
         /*case FUNC_EXECUTE:
             pV = SStack.Pop(); if(!pV){SetError(INVALID_FA);break;};
             pV->Get(pChar);
@@ -1787,56 +1803,217 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         bCompleted = true;
         break;
         //
-
+ 
+    case FUNC_EVENT_FOR_OBJECT:
     case FUNC_EVENT:
         s_off = SStack.GetDataNum() - arguments; // set stack offset
-        pV = SStack.Read(s_off, 0);
+
+        shift = 0;
+        if (func_code == FUNC_EVENT_FOR_OBJECT)
+        {
+            shift = 1;
+            pV = SStack.Read(s_off, 0);
+            if (!pV)
+            {
+                SetError(INVALID_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pV = pV->GetVarPointer();
+            if (pV->GetType() != VAR_OBJECT)
+            {
+                SetError(BAD_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pA = pV->GetAClass();
+            if (pA == nullptr)
+            {
+                SetError("AClass ERROR n1");
+                variadicHasAnError = true;
+                break;
+            }
+
+            ms.SetThisObject(pA);
+        }
+
+        pV = SStack.Read(s_off, 0 + shift);
         if (!pV)
         {
             SetError(INVALID_FA);
+            variadicHasAnError = true;
             break;
         }
         pV->Get(pChar);
-        if (arguments > 1)
+
+
+        if (arguments > 1 + shift)
         {
-            CreateMessage(&ms, s_off, 1);
+            pV = SStack.Read(s_off, 1 + shift);
+            if (!pV)
+            {
+                SetError(INVALID_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pV->Get(pChar2); //format
+
+            format = EventTab.GetEventFormat(pChar);
+            if (format.has_value())
+            {
+                currentFormat = pChar2;
+                if (func_code == FUNC_EVENT_FOR_OBJECT)
+                {
+                    currentFormat = "a" + currentFormat;
+                }
+                if (currentFormat != format.value())
+                {
+                    SetError("'%s' event expects '%s' format instead of '%s'", pChar, format.value().c_str(), currentFormat.c_str());
+                    variadicHasAnError = true;
+                    break;
+                }
+            }
+
+            CreateMessage(&ms, s_off, 1 + shift);
+            ms.Move2Start();
+            ProcessEvent(pChar, &ms);
+        }
+        else if (func_code == FUNC_EVENT_FOR_OBJECT)
+        {
+            format = EventTab.GetEventFormat(pChar);
+            if (format.has_value())
+            {
+                if (strcmp("a", format.value().c_str()))
+                {
+                    SetError("'%s' event expects '%s' format instead of '%s'", pChar, format.value().c_str(), "a");
+                    variadicHasAnError = true;
+                    break;
+                }
+            }
             ms.Move2Start();
             ProcessEvent(pChar, &ms);
         }
         else
+        {
             ProcessEvent(pChar);
+        }
+            
         for (n = 0; n < arguments; n++)
         {
             SStack.Pop();
         }
         // set stack pointer to correct position (vars in stack remain valid)
         break;
+    case FUNC_POSTEVENT_FOR_OBJECT:
     case FUNC_POSTEVENT:
         MESSAGE *pMS;
         S_EVENTMSG *pEM;
         s_off = SStack.GetDataNum() - arguments; // set stack offset
-        pV = SStack.Read(s_off, 0);
+
+        shift = 0;
+        pA = nullptr;
+        if (func_code == FUNC_POSTEVENT_FOR_OBJECT)
+        {
+            shift = 1;
+            pV = SStack.Read(s_off, 0);
+            if (!pV)
+            {
+                SetError(INVALID_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pV = pV->GetVarPointer();
+            if (pV->GetType() != VAR_OBJECT)
+            {
+                SetError(BAD_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pA = pV->GetAClass();
+            if (pA == nullptr)
+            {
+                SetError("AClass ERROR n1");
+                variadicHasAnError = true;
+                break;
+            }
+        }
+
+        pV = SStack.Read(s_off, 0 + shift);
         if (!pV)
         {
             SetError(INVALID_FA);
+            variadicHasAnError = true;
             break;
         }
         pV->Get(pChar);
-        pV = SStack.Read(s_off, 1);
+        pV = SStack.Read(s_off, 1 + shift);
         if (!pV)
         {
             SetError(INVALID_FA);
+            variadicHasAnError = true;
             break;
         }
         pV->Get(TempLong1);
-        if (arguments >= 4) // event w/o message
+
+
+        
+        if (arguments >= 4 + shift) // event w/o message
         {
+            pV = SStack.Read(s_off, 2 + shift);
+            if (!pV)
+            {
+                SetError(INVALID_FA);
+                variadicHasAnError = true;
+                break;
+            }
+            pV->Get(pChar2); // format
+
+            format = EventTab.GetEventFormat(pChar);
+            if (format.has_value())
+            {
+                currentFormat = pChar2;
+                if (func_code == FUNC_POSTEVENT_FOR_OBJECT)
+                {
+                    currentFormat = "a" + currentFormat;
+                }
+                if (currentFormat != format.value())
+                {
+                    SetError("'%s' event expects '%s' format instead of '%s'", pChar, format.value().c_str(),
+                             currentFormat.c_str());
+                    variadicHasAnError = true;
+                    break;
+                }
+            }
+
             pMS = new MESSAGE();
-            CreateMessage(pMS, s_off, 2);
+            if (pA)
+            {
+                pMS->SetThisObject(pA);
+            }
+            CreateMessage(pMS, s_off, 2 + shift);
+            pMS->Move2Start();
+        }
+        else if (pA)
+        {
+            if (format.has_value())
+            {
+                if (strcmp("a", format.value().c_str()))
+                {
+                    SetError("'%s' event expects '%s' format instead of '%s'", pChar, format.value().c_str(), "a");
+                    variadicHasAnError = true;
+                    break;
+                }
+
+            }
+            pMS = new MESSAGE();
+            pMS->SetThisObject(pA);
             pMS->Move2Start();
         }
         else
+        {
             pMS = nullptr;
+        }
+            
 
         pEM = new S_EVENTMSG(pChar, pMS, TempLong1);
         EventMsg.Add(pEM);
@@ -1852,6 +2029,7 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         if (!pV)
         {
             SetError(INVALID_FA);
+            variadicHasAnError = true;
             break;
         }
         pV->Get(ent);
@@ -2570,7 +2748,38 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
                   });
 
         break;
+
+    case FUNC_SET_EVENT_FORMAT:
+        pV2 = SStack.Pop();
+        if (!pV2)
+        {
+            SetError(INVALID_FA);
+            break;
+        }
+        
+        pV = SStack.Pop();
+        if (!pV)
+        {
+            SetError(INVALID_FA);
+            break;
+        }
+
+        pV->Get(pChar);
+        pV2->Get(pChar2);
+
+
+        SetEventFormat(pChar, pChar2);
+        break;
     }
+
+    if (variadicHasAnError)
+    {
+        for (n = 0; n < arguments; n++)
+        {
+            SStack.Pop();
+        }
+    }
+    
     return nullptr;
 }
 
