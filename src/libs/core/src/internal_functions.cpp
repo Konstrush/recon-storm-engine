@@ -117,7 +117,9 @@ enum FUNCTION_CODE
     FUNC_DEL_EVENT_HANDLER_FOR_OBJECT,
     FUNC_EVENT_FOR_OBJECT,
     FUNC_POSTEVENT_FOR_OBJECT,
-    FUNC_SET_EVENT_FORMAT
+    FUNC_SET_EVENT_FORMAT,
+    FUNC_SET_EVENT_STATIC_HANDLER,
+    FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT
 };
 
 INTFUNCDESC IntFuncTable[] = {
@@ -155,7 +157,10 @@ INTFUNCDESC IntFuncTable[] = {
     3, "DelEventHandlerForObject", TVOID, 
     0, "EventForObject", TVOID, 
     0, "PostEventForObject", TVOID, 
-    2, "SetEventFormat", TVOID};
+    2, "SetEventFormat", TVOID,
+    3, "SetEventStaticHandler", TVOID,
+    4, "SetEventStaticHandlerForObject", TVOID
+};
 
 /*
 char * FuncNameTable[]=
@@ -438,6 +443,7 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
     MESSAGE ms;
     uint32_t s_off;
     int shift;
+    bool bStatic = false;
     static std::remove_reference_t<entity_container_cref>::const_iterator entity_iterator;
     static std::remove_reference_t<entity_container_cref>::const_iterator entity_iterator_end;
     std::optional<std::string> format = std::nullopt;
@@ -1687,6 +1693,8 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         break;
     case FUNC_SET_EVENT_HANDLER_FOR_OBJECT:
     case FUNC_SET_EVENT_HANDLER:
+    case FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT:
+    case FUNC_SET_EVENT_STATIC_HANDLER:
         pV3 = SStack.Pop();
         if (!pV3)
         {
@@ -1709,7 +1717,9 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
         pV2->Get(pChar2);
         pV3->Get(TempLong1);
         pA = nullptr;
-        if (func_code == FUNC_SET_EVENT_HANDLER_FOR_OBJECT)
+
+        bStatic = (func_code == FUNC_SET_EVENT_STATIC_HANDLER || func_code == FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT);
+        if (func_code == FUNC_SET_EVENT_HANDLER_FOR_OBJECT || func_code == FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT)
         {
             pV4 = SStack.Pop();
             if (!pV4)
@@ -1731,7 +1741,7 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
             }
         }
 
-        SetEventHandler(pA, pChar, pChar2, TempLong1);
+        SetEventHandler(pA, pChar, pChar2, TempLong1, bStatic);
         break;
         //
     case FUNC_EXIT_PROGRAM:

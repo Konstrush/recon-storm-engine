@@ -39,7 +39,8 @@ void S_EVENTTAB::Clear()
             {
                 for (auto &handler : elem.second)
                 {
-                    handler.status = FSTATUS_DELETED;
+                    if (!handler.bStatic)
+                        handler.status = FSTATUS_DELETED;
                 }
             }
 
@@ -114,6 +115,7 @@ uint32_t S_EVENTTAB::AddEventHandler(ATTRIBUTES *pObject, const char *event_name
         if (funcInfoVec[i].func_code == func_code)
         {
             funcInfoVec[i].status = FSTATUS_NORMAL;
+            funcInfoVec[i].bStatic = bStatic;
             return (((ti << 24) & 0xff000000) | (eventPos & 0xffffff));
         }
     }

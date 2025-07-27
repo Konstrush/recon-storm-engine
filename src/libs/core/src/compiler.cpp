@@ -777,7 +777,8 @@ VDATA *COMPILER::ProcessEventFunctions(std::vector<EVENT_FUNC_INFO> &eventFuncVe
     {
         if (eventFuncVec[n].status != FSTATUS_NORMAL)
             continue;
-        pVD = ProcessEventFunc(eventFuncVec, n, event_code, pMem, nTicks);
+        auto pVD2 = ProcessEventFunc(eventFuncVec, n, event_code, pMem, nTicks);
+        pVD = pVD2 ? pVD2 : pVD;
         if (bEventsBreak)
             break;
     }
