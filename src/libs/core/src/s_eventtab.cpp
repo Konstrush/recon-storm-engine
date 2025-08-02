@@ -1,7 +1,6 @@
 #include "s_eventtab.h"
 
 #include "string_compare.hpp"
-#include <spdlog/spdlog.h>
 #include "message.h"
 
 #define HASHT_INDEX(x) (uint8_t)(x >> 24)
@@ -301,8 +300,9 @@ void S_EVENTTAB::ProcessFrame()
         }
 }
 
-void S_EVENTTAB::StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
-                                 std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+bool S_EVENTTAB::StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
+                                 std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                                 VIRTUAL_COMPILER *compiler)
 {
     auto &eventTable = attr->CreateAttribute(std::string("eventTable"));
     
@@ -346,9 +346,10 @@ void S_EVENTTAB::StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
                 counter++;
 
 
-                if (!StoreAttributesRef(&curObjectEventTable, cur.first, varIndex))
+                if (!StoreAttributesRef(&curObjectEventTable, cur.first, varIndex, compiler))
                 {
-                    throw std::runtime_error(fmt::format("Attempting to save handler for local object"));
+                    compiler->SetError("Attempting to save handler for local object");
+                    return false;
                 }
 
                 auto &curObjectHandlerTable = curObjectEventTable.CreateAttribute(std::string("handlers"));
@@ -366,14 +367,15 @@ void S_EVENTTAB::StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
             }
         }
     }
+    return true;
 }
-void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &VarTab)
+bool S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
 {
     auto eventTable = attr->GetAttributeClass(std::string("eventTable"));
     if (!eventTable)
     {
-        spdlog::error("eventTable not found");
-        return;
+        compiler->SetError("eventTable not found");
+        return false;
     }
 
 
@@ -383,8 +385,8 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
         auto curEventRecord = eventTable->GetAttributeClass(i);
         if (!curEventRecord)
         {
-            spdlog::error("eventTable[{}] not found", i);
-            return;
+            compiler->SetError("eventTable[%u] not found", (unsigned)i);
+            return false;
         }
 
         auto eventName = curEventRecord->GetThisName();
@@ -399,8 +401,8 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
 
         if (!commonEventTable)
         {
-            spdlog::error("eventTable[{}].common not found", i);
-            return;
+            compiler->SetError("eventTable[%u].common not found", (unsigned)i);
+            return false;
         }
         auto eventFuncCount = commonEventTable->GetAttributesNum();
 
@@ -409,8 +411,8 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
             auto curFuncRecord = commonEventTable->GetAttributeClass(j);
             if (!curFuncRecord)
             {
-                spdlog::error("eventTable.common.{}[{}] not found", eventName, j);
-                return;
+                compiler->SetError("eventTable.common.%s[%u] not found", eventName, (unsigned)j);
+                return false;
             }
             auto funcName = curFuncRecord->GetThisName();
 
@@ -419,14 +421,14 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
             const uint32_t func_code = FuncTab.FindFunc(funcName);
             if (func_code == INVALID_FUNC_CODE)
             {
-                spdlog::error("Invalid function code douring event loading");
-                return;
+                compiler->SetError("Invalid function code douring event loading");
+                return false;
             }
 
             if (!FuncTab.GetFunc(fi, func_code))
             {
-                spdlog::error("func not found error");
-                return;
+                compiler->SetError("funcion not found error");
+                return false;
             }
 
             bool isStatic = curFuncRecord->GetValue() == std::string("1");
@@ -437,8 +439,8 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
 
         if (!objectEventTable)
         {
-            spdlog::error("eventTable[{}].object not found", i);
-            return;
+            compiler->SetError("eventTable[%u].object not found", (unsigned)i);
+            return false;
         }
 
         auto objectHandlersCount = objectEventTable->GetAttributesNum();
@@ -448,22 +450,22 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
             auto curObjectHandlerRecord = objectEventTable->GetAttributeClass(fmt::format("{}", k));
             if (!curObjectHandlerRecord)
             {
-                spdlog::error("eventTable[{}].object[{}] not found", i, k);
-                return;
+                compiler->SetError("eventTable[%u].object[%u] not found", (unsigned)i, (unsigned)k);
+                return false;
             }
 
-            ATTRIBUTES *objectPointer = LoadAttributesRef(curObjectHandlerRecord, VarTab);
+            ATTRIBUTES *objectPointer = LoadAttributesRef(curObjectHandlerRecord, VarTab, compiler);
             if (!objectPointer)
             {
-                spdlog::error("stored attribute reference not found", i, k);
-                return;
+                compiler->SetError("stored attribute reference not found");
+                return false;
             }
 
             auto curObjectHandlerListRecord = curObjectHandlerRecord->GetAttributeClass("handlers");
             if (!curObjectHandlerListRecord)
             {
-                spdlog::error("eventTable[{}].object[{}].handlers not found", i, k);
-                return;
+                compiler->SetError("eventTable[%u].object[%u].handlers not found", (unsigned)i, (unsigned)k);
+                return false;
             }
 
             auto eventFuncCount = curObjectHandlerListRecord->GetAttributesNum();
@@ -473,8 +475,8 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
                 auto curFuncRecord = curObjectHandlerListRecord->GetAttributeClass(j);
                 if (!curFuncRecord)
                 {
-                    spdlog::error("eventTable.common.{}[{}] not found", eventName, j);
-                    return;
+                    compiler->SetError("eventTable.common.%s[%u] not found", eventName, (unsigned)j);
+                    return false;
                 }
                 auto funcName = curFuncRecord->GetThisName();
 
@@ -482,14 +484,14 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
                 const uint32_t func_code = FuncTab.FindFunc(funcName);
                 if (func_code == INVALID_FUNC_CODE)
                 {
-                    spdlog::error("Invalid function code douring event loading");
-                    return;
+                    compiler->SetError("Invalid function code douring event loading");
+                    return false;
                 }
 
                 if (!FuncTab.GetFunc(fi, func_code))
                 {
-                    spdlog::error("func not found error");
-                    return;
+                    compiler->SetError("function not found error");
+                    return false;
                 }
 
                 bool isStatic = curFuncRecord->GetValue() == std::string("1");
@@ -498,6 +500,7 @@ void S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &
         }
 
     }
+    return true;
 }
 
 

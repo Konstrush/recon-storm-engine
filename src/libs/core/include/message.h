@@ -10,6 +10,7 @@
 
 class VDATA;
 class DATA;
+class VIRTUAL_COMPILER;
 class VarTable;
 
 namespace storm
@@ -95,8 +96,9 @@ class MESSAGE final
 
     size_t GetParametersCount() const;
     void GetData(DATA *vd, COMPILER *comp);
-    void StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex) const;
-    static MESSAGE *LoadData(ATTRIBUTES *attr, VarTable &VarTab);
+    bool StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                   VIRTUAL_COMPILER *compiler) const;
+    static MESSAGE *LoadData(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler);
     void FixEnitiyIDs();
 
     ATTRIBUTES *GetThisObject();
@@ -110,8 +112,9 @@ class MESSAGE final
     bool hasThisObject_{false};
 };
 
-ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab);
+ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler);
 
 //false - local variable reference; otherwise - true
 bool StoreAttributesRef(ATTRIBUTES *attr, const ATTRIBUTES *val,
-                        std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex);
+                        std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                        VIRTUAL_COMPILER *compiler);

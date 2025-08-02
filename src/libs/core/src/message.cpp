@@ -6,10 +6,10 @@
 
 #include <fmt/format.h>
 #include <cassert>
-#include <spdlog/spdlog.h>
 #include <v_data.h>
 #include "s_vartab.h"
 #include "core_impl.h"
+#include "data.h"
 
 void MESSAGE::Move2Start()
 {
@@ -346,7 +346,8 @@ void MESSAGE::SetThisObject(ATTRIBUTES *attr)
 
 
 bool StoreAttributesRef(ATTRIBUTES *attr, const ATTRIBUTES *val,
-                std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+                        std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                        VIRTUAL_COMPILER *compiler)
 {
     if (!val)
     {
@@ -395,82 +396,96 @@ bool StoreAttributesRef(ATTRIBUTES *attr, const ATTRIBUTES *val,
     return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const uint8_t &val)
+static bool StoreParam(ATTRIBUTES *attr, const uint8_t &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const uint16_t &val)
+static bool StoreParam(ATTRIBUTES *attr, const uint16_t &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const uint32_t &val)
+static bool StoreParam(ATTRIBUTES *attr, const uint32_t &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const int32_t &val)
+static bool StoreParam(ATTRIBUTES *attr, const int32_t &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const float &val)
+static bool StoreParam(ATTRIBUTES *attr, const float &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const double &val)
+static bool StoreParam(ATTRIBUTES *attr, const double &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const uintptr_t &val)
+static bool StoreParam(ATTRIBUTES *attr, const uintptr_t &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const ATTRIBUTES *val,
-                       std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+static bool StoreParam(ATTRIBUTES *attr, const ATTRIBUTES *val,
+                       std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                       VIRTUAL_COMPILER *compiler)
 {
-    if (!StoreAttributesRef(attr, val, varIndex))
+    if (!StoreAttributesRef(attr, val, varIndex, compiler))
     {
         auto &data = attr->CreateAttribute(std::string("value"));
         data = val->Copy();
     }
+    return true;
 }
 
-static void StoreParamEntity(ATTRIBUTES *attr, const entid_t &val,
-                             std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+static bool StoreParamEntity(ATTRIBUTES *attr, const entid_t &val,
+                             std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                             VIRTUAL_COMPILER *compiler)
 {
     auto data = core_internal.Entity_GetAttributePointer(val);
-    StoreParam(attr, data, varIndex);
+    return StoreParam(attr, data, varIndex, compiler);
 }
 
-static void StoreParam(ATTRIBUTES *attr, VDATA *val,
-                       std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+static bool StoreParam(ATTRIBUTES *attr, VDATA *val,
+                       std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                       VIRTUAL_COMPILER *compiler)
 {
     entid_t eid = val->GetEntityID();
     attr->CreateAttribute(std::string("objectId"), fmt::format("{}", eid).c_str());
     auto attributes = val->GetAClass();
-    StoreParam(attr, attributes, varIndex);
-
+    return StoreParam(attr, attributes, varIndex, compiler);
 }
 
-static void StoreParam(ATTRIBUTES *attr, const CVECTOR &val)
+static bool StoreParam(ATTRIBUTES *attr, const CVECTOR &val)
 {
     attr->CreateAttribute(std::string("x"), fmt::format("{}", val.x).c_str());
     attr->CreateAttribute(std::string("y"), fmt::format("{}", val.y).c_str());
     attr->CreateAttribute(std::string("z"), fmt::format("{}", val.z).c_str());
+    return true;
 }
 
-static void StoreParam(ATTRIBUTES *attr, const std::string &val)
+static bool StoreParam(ATTRIBUTES *attr, const std::string &val)
 {
     attr->CreateAttribute(std::string("value"), fmt::format("{}", val).c_str());
+    return true;
 }
 
 
-void MESSAGE::StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex) const
+bool MESSAGE::StoreData(ATTRIBUTES *attr,
+                        std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                        VIRTUAL_COMPILER *compiler) const
 {
     attr->CreateAttribute(std::string("format"), format_.c_str());
     int ito = hasThisObject_;
@@ -507,13 +522,13 @@ void MESSAGE::StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<s
             StoreParam(&curParamRecord, std::get<uintptr_t>(params_[i]));
             continue;
         case 'a':
-            StoreParam(&curParamRecord, std::get<ATTRIBUTES *>(params_[i]), varIndex);
+            StoreParam(&curParamRecord, std::get<ATTRIBUTES *>(params_[i]), varIndex, compiler);
             continue;
         case 'i':
-            StoreParamEntity(&curParamRecord, std::get<entid_t>(params_[i]), varIndex);
+            StoreParamEntity(&curParamRecord, std::get<entid_t>(params_[i]), varIndex, compiler);
             continue;
         case 'e':
-            StoreParam(&curParamRecord, std::get<VDATA *>(params_[i]), varIndex);
+            StoreParam(&curParamRecord, std::get<VDATA *>(params_[i]), varIndex, compiler);
             continue;
         case 'c':
             StoreParam(&curParamRecord, std::get<CVECTOR>(params_[i]));
@@ -523,122 +538,138 @@ void MESSAGE::StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<s
             continue;
         }
         default:
-            throw std::runtime_error(fmt::format("Unknown message format: '{}'", format_[i]));
+            compiler->SetError("Unknown message format: '%c'", format_[i]);
+            return false;
         }
     }
+    return true;
 }
 
-template <typename T> T LoadParam(ATTRIBUTES *attr)
+template <typename T> T LoadParam(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     static_assert(false, "Not implemented");
 }
 
-template <typename T> T LoadParam(ATTRIBUTES *attr, VarTable &VarTab)
+template <typename T> T LoadParam(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler, bool &status)
 {
     static_assert(false, "Not implemented");
 }
 
 
-template <> uint8_t LoadParam<uint8_t>(ATTRIBUTES *attr)
+template <> uint8_t LoadParam<uint8_t>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stoll(str.c_str());
 }
 
-template <> uint16_t LoadParam<uint16_t>(ATTRIBUTES *attr)
+template <> uint16_t LoadParam<uint16_t>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stoll(str.c_str());
 }
 
-template <> uint32_t LoadParam<uint32_t>(ATTRIBUTES *attr)
+template <> uint32_t LoadParam<uint32_t>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stoll(str.c_str());
 }
 
-template <> int32_t LoadParam<int32_t>(ATTRIBUTES *attr)
+template <> int32_t LoadParam<int32_t>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stoll(str.c_str());
 }
 
-template <> float LoadParam<float>(ATTRIBUTES *attr)
+template <> float LoadParam<float>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stold(str.c_str());
 }
 
-template <> double LoadParam<double>(ATTRIBUTES *attr)
+template <> double LoadParam<double>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stold(str.c_str());
 }
 
-template <> uintptr_t LoadParam<uintptr_t>(ATTRIBUTES *attr)
+template <> uintptr_t LoadParam<uintptr_t>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
-    spdlog::warn("'p' parameter is not supproted for messages");
+    compiler->SetWarning("'p' parameter is not supproted for messages");
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return 0;
     }
 
-    auto str = valueAttr->GetValue();
+    auto &str = valueAttr->GetValue();
+    status = true;
     return std::stoll(str.c_str());
 }
 
-static DATA *FindVariable(std::string name, std::vector<size_t> indexes, VarTable &VarTab)
+static DATA *FindVariable(std::string name, std::vector<size_t> indexes, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
 {
     auto varCode = VarTab.FindVar(name);
     const VarInfo *realVar;
     DATA *dt;
     if (varCode == INVALID_VAR_CODE)
     {
-        spdlog::error("Load warning - variable: '{}' not found", name);
+        compiler->SetError("Load warning - variable: '%s' not found", name.c_str());
         return nullptr;
     }
     else
@@ -646,7 +677,7 @@ static DATA *FindVariable(std::string name, std::vector<size_t> indexes, VarTabl
         realVar = VarTab.GetVarX(varCode);
         if (realVar == nullptr)
         {
-            spdlog::error("Load warning - variable: '{}' has invalid var code", name);
+            compiler->SetError("Load warning - variable: '%s' has invalid var code", name.c_str());
             return nullptr;
         }
         else
@@ -660,7 +691,7 @@ static DATA *FindVariable(std::string name, std::vector<size_t> indexes, VarTabl
         dt = dt->GetArrayElement(idx);
         if (!dt)
         {
-            spdlog::error("Load warning - variable: '{}' has not index {}", name, idx);
+            compiler->SetError("Load warning - variable: '%s' has not index %u", name.c_str(), (unsigned)idx);
             return nullptr;
         }
     }
@@ -668,16 +699,16 @@ static DATA *FindVariable(std::string name, std::vector<size_t> indexes, VarTabl
     return dt;
 }
 
-static DATA *LoadVariable(ATTRIBUTES *attr, VarTable &VarTab)
+static DATA *LoadVariable(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
 {
     auto varNameAttr = attr->GetAttributeClass(std::string("varName"));
     if (!varNameAttr)
     {
-        spdlog::error("varName not found");
+        compiler->SetError("varName not found");
         return nullptr;
     }
 
-    auto varName = varNameAttr->GetValue();
+    auto &varName = varNameAttr->GetValue();
 
     std::vector<size_t> indexes;
     auto indexesRec = attr->GetAttributeClass(std::string("indexes"));
@@ -689,7 +720,7 @@ static DATA *LoadVariable(ATTRIBUTES *attr, VarTable &VarTab)
             auto curIndexRecord = indexesRec->GetAttributeClass(fmt::format("{}", i));
             if (!curIndexRecord)
             {
-                spdlog::error("indexes.{} not found", i);
+                compiler->SetError("indexes.%u not found", (unsigned)i);
                 return nullptr;
             }
 
@@ -697,12 +728,12 @@ static DATA *LoadVariable(ATTRIBUTES *attr, VarTable &VarTab)
         }
     }
 
-    return FindVariable(varName, indexes, VarTab);
+    return FindVariable(varName, indexes, VarTab, compiler);
 }
 
-ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab)
+ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
 {
-    auto var = LoadVariable(attr, VarTab);
+    auto var = LoadVariable(attr, VarTab, compiler);
     if (!var)
     {
         return nullptr;
@@ -722,14 +753,14 @@ ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab)
             auto curAttributeRecord = attributesRec->GetAttributeClass(fmt::format("{}", i));
             if (!curAttributeRecord)
             {
-                spdlog::error("attributes.{} not found", i);
+                compiler->SetError("attributes.%u not found", (unsigned)i);
                 return nullptr;
             }
 
             attributes = attributes->GetAttributeClass(curAttributeRecord->GetValue());
             if (!attributes)
             {
-                spdlog::error("missing attribute '{}'", curAttributeRecord->GetValue());
+                compiler->SetError("missing attribute '%s'", curAttributeRecord->GetValue().c_str());
                 return nullptr;
             }
         }
@@ -738,7 +769,8 @@ ATTRIBUTES *LoadAttributesRef(ATTRIBUTES *attr, VarTable &VarTab)
 }
 
 
-template <> ATTRIBUTES *LoadParam<ATTRIBUTES *>(ATTRIBUTES *attr, VarTable &VarTab)
+template <>
+ATTRIBUTES *LoadParam<ATTRIBUTES *>(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (valueAttr)
@@ -747,20 +779,19 @@ template <> ATTRIBUTES *LoadParam<ATTRIBUTES *>(ATTRIBUTES *attr, VarTable &VarT
     }
 
 
-    return LoadAttributesRef(attr, VarTab);
+    auto ret = LoadAttributesRef(attr, VarTab, compiler);
+    status = ret != nullptr;
+    return ret;
 }
 
-static DATA *LoadParamEntity(ATTRIBUTES *attr, VarTable &VarTab)
+static DATA *LoadParamEntity(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler, bool &status)
 {
-    DATA *dt = LoadVariable(attr, VarTab);
-    if (!dt)
-    {
-        return nullptr;
-    }
+    DATA *dt = LoadVariable(attr, VarTab, compiler);
+    status = dt != nullptr;
     return dt;
 }
 
-template <> VDATA *LoadParam<VDATA *>(ATTRIBUTES *attr, VarTable &VarTab)
+template <> VDATA *LoadParam<VDATA *>(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (valueAttr)
@@ -768,82 +799,86 @@ template <> VDATA *LoadParam<VDATA *>(ATTRIBUTES *attr, VarTable &VarTab)
         auto objectIdAttr = attr->GetAttributeClass(std::string("objectId"));
         if (!objectIdAttr)
         {
-            spdlog::error("objectId not found");
+            compiler->SetError("objectId not found");
+            status = false;
             return nullptr;
         }
 
         entid_t objectId = std::stoll(objectIdAttr->GetValue());
+        status = true;
         return new DATA(objectId, valueAttr);
     }
 
-    DATA *dt = LoadVariable(attr, VarTab);
-    if (!dt)
-    {
-        return nullptr;
-    }
-
+    DATA *dt = LoadVariable(attr, VarTab, compiler);
+    status = dt != nullptr;
     return dt;
 }
 
-template <> CVECTOR LoadParam<CVECTOR>(ATTRIBUTES *attr)
+template <> CVECTOR LoadParam<CVECTOR>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     CVECTOR ret;
 
     auto xAttr = attr->GetAttributeClass(std::string("x"));
     if (!xAttr)
     {
-        spdlog::error("x not found");
+        compiler->SetError("x not found");
+        status = false;
         return ret;
     }
 
     auto yAttr = attr->GetAttributeClass(std::string("y"));
     if (!yAttr)
     {
-        spdlog::error("y not found");
+        compiler->SetError("y not found");
+        status = false;
         return ret;
     }
 
     auto zAttr = attr->GetAttributeClass(std::string("z"));
     if (!zAttr)
     {
-        spdlog::error("z not found");
+        compiler->SetError("z not found");
+        status = false;
         return ret;
     }
     ret.x = std::stold(xAttr->GetValue().c_str());
     ret.y = std::stold(yAttr->GetValue().c_str());
     ret.z = std::stold(zAttr->GetValue().c_str());
+    status = true;
     return ret;
 }
 
-template <> std::string LoadParam<std::string>(ATTRIBUTES *attr)
+template <> std::string LoadParam<std::string>(ATTRIBUTES *attr, VIRTUAL_COMPILER *compiler, bool &status)
 {
     auto valueAttr = attr->GetAttributeClass(std::string("value"));
     if (!valueAttr)
     {
-        spdlog::error("value not found");
+        compiler->SetError("value not found");
+        status = false;
         return "error";
     }
 
+    status = true;
     return valueAttr->GetValue();
 }
 
-MESSAGE *MESSAGE::LoadData(ATTRIBUTES *attr, VarTable &VarTab)
+MESSAGE *MESSAGE::LoadData(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
 {
 
     auto formatAttr = attr->GetAttributeClass(std::string("format"));
     if (!formatAttr)
     {
-        spdlog::error("format not found");
+        compiler->SetError("format not found");
         return nullptr;
     }
 
-    auto formatStr = formatAttr->GetValue();
+    auto &formatStr = formatAttr->GetValue();
 
 
     auto isThisObjectAttr = attr->GetAttributeClass(std::string("isThisObject"));
     if (!isThisObjectAttr)
     {
-        spdlog::error("isThisObject not found");
+        compiler->SetError("isThisObject not found");
         return nullptr;
     }
 
@@ -852,14 +887,14 @@ MESSAGE *MESSAGE::LoadData(ATTRIBUTES *attr, VarTable &VarTab)
     auto paramsAttr = attr->GetAttributeClass(std::string("params"));
     if (!paramsAttr)
     {
-        spdlog::error("params not found");
+        compiler->SetError("params not found");
         return nullptr;
     }
 
     auto paramsCount = paramsAttr->GetAttributesNum();
     if (paramsCount != formatStr.size())
     {
-        spdlog::error("params count != format length");
+        compiler->SetError("params count != format length");
         return nullptr;
     }
 
@@ -871,54 +906,138 @@ MESSAGE *MESSAGE::LoadData(ATTRIBUTES *attr, VarTable &VarTab)
         auto curParamRecord = paramsAttr->GetAttributeClass(fmt::format("{}", i));
         if (!curParamRecord)
         {
-            spdlog::error("params.{} not found", i);
+            compiler->SetError("params.%u not found", (unsigned)i);
             return nullptr;
         }
         DATA *ent = nullptr;
+        bool status = false;
         switch (formatStr[i])
         {
         case 'b':
-            msg.Set(LoadParam<uint8_t>(curParamRecord));
+        {
+            auto ret = LoadParam<uint8_t>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'w':
-            msg.Set(LoadParam<uint16_t>(curParamRecord));
+        }
+        case 'w': 
+        {
+            auto ret = LoadParam<uint16_t>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'l':
-            msg.Set(LoadParam<int32_t>(curParamRecord));
+        } 
+        case 'l': 
+        {
+            auto ret = LoadParam<int32_t>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'u':
-            msg.Set(LoadParam<uint32_t>(curParamRecord));
+        }
+        case 'u': 
+        {
+            auto ret = LoadParam<uint32_t>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'f':
-            msg.Set(LoadParam<float>(curParamRecord));
+        }
+        case 'f': 
+        {
+            auto ret = LoadParam<float>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'd':
-            msg.Set(LoadParam<double>(curParamRecord));
+        }
+        case 'd': 
+        {
+            auto ret = LoadParam<double>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'p':
-            msg.Set(LoadParam<uintptr_t>(curParamRecord));
+        }
+        case 'p': 
+        {
+            auto ret = LoadParam<uintptr_t>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'a':
-            msg.Set(LoadParam<ATTRIBUTES *>(curParamRecord, VarTab));
+        }
+        case 'a': 
+        {
+            auto ret = LoadParam<ATTRIBUTES *>(curParamRecord, VarTab, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
+        }
         case 'i':
-            ent = LoadParamEntity(curParamRecord, VarTab);
+        {
+            ent = LoadParamEntity(curParamRecord, VarTab, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
             msg.SetEntity(ent->GetEntityID());
             // Впоследсвии будет перезаписана новым GetEntityID(), после обновления сущностей
             msg.params_[i] = ent;
             break;
-        case 'e':
-            msg.Set(LoadParam<VDATA *>(curParamRecord, VarTab));
+        }
+        case 'e': 
+        {
+            auto ret = LoadParam<VDATA *>(curParamRecord, VarTab, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 'c':
-            msg.Set(LoadParam<CVECTOR>(curParamRecord));
+        }
+        case 'c': 
+        {
+            auto ret = LoadParam<CVECTOR>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
-        case 's': {
-            msg.Set(LoadParam<std::string>(curParamRecord));
+        }
+        case 's': 
+        {
+            auto ret = LoadParam<std::string>(curParamRecord, compiler, status);
+            if (!status)
+            {
+                return nullptr;
+            }
+            msg.Set(ret);
             break;
         }
         default:
-            throw std::runtime_error(fmt::format("Unknown message format: '{}'", formatStr[i]));
+            compiler->SetError("Unknown message format: '%c'", formatStr[i]);
+            return nullptr;
         }
     }
 

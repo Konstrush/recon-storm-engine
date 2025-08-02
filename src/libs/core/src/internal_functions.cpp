@@ -119,7 +119,8 @@ enum FUNCTION_CODE
     FUNC_POSTEVENT_FOR_OBJECT,
     FUNC_SET_EVENT_FORMAT,
     FUNC_SET_EVENT_STATIC_HANDLER,
-    FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT
+    FUNC_SET_EVENT_STATIC_HANDLER_FOR_OBJECT,
+    FUNC_CREATE_RECOVERY_FILE
 };
 
 INTFUNCDESC IntFuncTable[] = {
@@ -159,7 +160,8 @@ INTFUNCDESC IntFuncTable[] = {
     0, "PostEventForObject", TVOID, 
     2, "SetEventFormat", TVOID,
     3, "SetEventStaticHandler", TVOID,
-    4, "SetEventStaticHandlerForObject", TVOID
+    4, "SetEventStaticHandlerForObject", TVOID,
+    0, "__CreateRecoveryFile", TVOID
 };
 
 /*
@@ -2779,6 +2781,10 @@ DATA *COMPILER::BC_CallIntFunction(uint32_t func_code, DATA *&pVResult, uint32_t
 
 
         SetEventFormat(pChar, pChar2);
+        break;
+
+    case FUNC_CREATE_RECOVERY_FILE:
+        CreateRecoveryFile();
         break;
     }
 

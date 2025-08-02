@@ -56,9 +56,10 @@ class S_EVENTTAB
     void InvalidateBySegmentID(uint32_t segment_id);
     uint32_t FindEvent(const char *event_name);
     void ProcessFrame();
-    void StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
-                         std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex);
-    void LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &VarTab);
+    bool StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
+                         std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                         VIRTUAL_COMPILER *compiler);
+    bool LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &VarTab, VIRTUAL_COMPILER* compiler);
 
     void SetEventFormat(const char *event_name, std::string format);
     std::optional<std::string> GetEventFormat(const char *event_name);

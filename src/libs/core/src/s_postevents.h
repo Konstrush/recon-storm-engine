@@ -2,7 +2,6 @@
 
 #include "s_eventmsg.h"
 #include "s_vartab.h"
-#include <spdlog/spdlog.h>
 
 class POSTEVENTS_LIST
 {
@@ -87,8 +86,9 @@ class POSTEVENTS_LIST
         }
     }
 
-    void StoreEventsData(ATTRIBUTES *attr,
-                         std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex)
+    bool StoreEventsData(ATTRIBUTES *attr,
+                         std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                         VIRTUAL_COMPILER *compiler)
     {
         auto &eventTable = attr->CreateAttribute(std::string("postEventTable"));
 
@@ -100,18 +100,23 @@ class POSTEVENTS_LIST
                 if (!pTable[n]->IsValid())
                     continue;
                 auto &curPostEvent = eventTable.CreateAttribute(fmt::format("{}", count));
-                pTable[n]->StoreData(&curPostEvent, varIndex);
+                auto ret = pTable[n]->StoreData(&curPostEvent, varIndex, compiler);
+                if (!ret)
+                {
+                    return false;
+                }
                 count++;
             }
         }
+        return true;
     }
-    void LoadEventsData(ATTRIBUTES *attr, VarTable &VarTab)
+    bool LoadEventsData(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
     {
         auto eventTable = attr->GetAttributeClass(std::string("postEventTable"));
         if (!eventTable)
         {
-            spdlog::error("postEventTable not found");
-            return;
+            compiler->SetError("postEventTable not found");
+            return false;
         }
 
 
@@ -121,18 +126,19 @@ class POSTEVENTS_LIST
             auto curEventRecord = eventTable->GetAttributeClass(fmt::format("{}", i));
             if (!curEventRecord)
             {
-                spdlog::error("postEventTable.{} not found", i);
-                return;
+                compiler->SetError("postEventTable.%u not found", (unsigned)i);
+                return false;
             }
 
-            auto msg = S_EVENTMSG::LoadData(curEventRecord, VarTab);
+            auto msg = S_EVENTMSG::LoadData(curEventRecord, VarTab, compiler);
             if (!msg)
             {
-                spdlog::error("unable to load event message");
-                return;
+                compiler->SetError("unable to load event message");
+                return false;
             }
             Add(msg);
         }
+        return true;
     }
 
     void FixEnitiyIDs()

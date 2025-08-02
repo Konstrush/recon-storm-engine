@@ -221,7 +221,7 @@ class COMPILER : public VIRTUAL_COMPILER
     char *ReadString();
 
     void SaveVariable(DATA *pV, bool bdim = false);
-    bool ReadVariable(char *name, /*DWORD code,*/ bool bdim = false, uint32_t a_index = 0);
+    bool ReadVariable(char *name, std::vector<std::string> *pRecoveryNameTable, bool bdim = false, uint32_t a_index = 0);
     bool FindReferencedVariable(DATA *pRef, uint32_t &var_index, uint32_t &array_index);
     bool FindReferencedVariableByRootA(ATTRIBUTES *pA, uint32_t &var_index, uint32_t &array_index);
     ATTRIBUTES *TraceARoot(ATTRIBUTES *pA, const char *&pAccess);
@@ -269,13 +269,12 @@ class COMPILER : public VIRTUAL_COMPILER
     // printout script functions usage
     void PrintoutUsage();
 
-    void PrepareEventsToSaving();
-    void PrepareEventsBeforeLoading();
-    void PrepareEventsAfterLoading();
+    bool PrepareEventsToSaving();
+    bool PrepareEventsBeforeLoading();
+    bool PrepareEventsAfterLoading();
 
-    void StoreEventsData(ATTRIBUTES *,
-                         std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex);
-    void LoadEventsData(ATTRIBUTES *, VarTable &VarTab);
+    void CreateRecoveryFile() const;
+    bool LoadRecoveryFile(std::vector<std::string> &v);
 
 private:
     [[nodiscard]] std::filesystem::path GetSegmentCachePath(const SEGMENT_DESC &segment) const;

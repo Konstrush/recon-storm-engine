@@ -3,7 +3,6 @@
 #include "message.h"
 #include "platform/platform.hpp"
 #include "s_vartab.h"
-#include <spdlog/spdlog.h>
 
 class S_EVENTMSG
 {
@@ -69,8 +68,8 @@ class S_EVENTMSG
         return !bInvalide && pEventName;
     }
 
-    void StoreData(ATTRIBUTES *attr,
-                   std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex) const
+    bool StoreData(ATTRIBUTES *attr, std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                   VIRTUAL_COMPILER *compiler) const
     {
 
         auto period = 0;
@@ -84,17 +83,21 @@ class S_EVENTMSG
 
         if (pMessageClass)
         {
-            pMessageClass->StoreData(&attr->CreateAttribute(std::string("pEventMsg")), varIndex);
+            auto ret = pMessageClass->StoreData(&attr->CreateAttribute(std::string("pEventMsg")), varIndex, compiler);
+            if (!ret)
+            {
+                return false;
+            }
         }
-        
+        return true;
     }
 
-    static S_EVENTMSG *LoadData(ATTRIBUTES *attr, VarTable &VarTab)
+    static S_EVENTMSG *LoadData(ATTRIBUTES *attr, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
     {
         auto nPeriodRec = attr->GetAttributeClass(std::string("nPeriod"));
         if (!nPeriodRec)
         {
-            spdlog::error("nPeriod not found");
+            compiler->SetError("nPeriod not found");
             return nullptr;
         }
 
@@ -104,18 +107,22 @@ class S_EVENTMSG
         auto pEventNameRec = attr->GetAttributeClass(std::string("pEventName"));
         if (!pEventNameRec)
         {
-            spdlog::error("pEventName not found");
+            compiler->SetError("pEventName not found");
             return nullptr;
         }
 
-        auto pEventNameVal = pEventNameRec->GetValue();
+        auto &pEventNameVal = pEventNameRec->GetValue();
 
         MESSAGE *msg = nullptr;
 
         auto MessageRec = attr->GetAttributeClass(std::string("pEventMsg"));
         if (MessageRec)
         {
-            msg = MESSAGE::LoadData(MessageRec, VarTab);
+            msg = MESSAGE::LoadData(MessageRec, VarTab, compiler);
+            if (!msg)
+            {
+                return nullptr;
+            }
         } 
 
         return new S_EVENTMSG(pEventNameVal.c_str(), msg, period);

@@ -18,6 +18,7 @@
 
 #include <SDL_timer.h>
 #include <unordered_map>
+#include <filesystem>
 
 
 #define SKIP_COMMENT_TRACING
@@ -32,6 +33,10 @@
 #define DEF_COMPILE_EXPRESSIONS
 
 constexpr auto MAGIC_VAR_CODE = 0xffffffaa;
+constexpr auto RECOVERY_FILE_PREFIX_INT = 0xaa4af7ab;
+constexpr auto RECOVERY_FILE_PREFIX_STRING = "RECOVERY";
+constexpr auto RECOVERY_FILE_PATH = "recovery.bin";
+
 
 #ifdef _WIN32 // S_DEBUG
 namespace
@@ -6316,7 +6321,7 @@ char *COMPILER::ReadString()
     return pBuffer;
 }
 
-bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_index)
+bool COMPILER::ReadVariable(char *name, std::vector<std::string> *pRecoveryNameTable, bool bDim, uint32_t a_index)
 {
     int32_t nLongValue;
     uintptr_t ptrValue;
@@ -6417,7 +6422,7 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
                 continue;
             }
 
-            if (!ReadVariable(name, /*code,*/ true, n))
+            if (!ReadVariable(name, pRecoveryNameTable, true, n))
                 return false;
         }
         return true;
@@ -6476,7 +6481,6 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
             break; // uninitialized ref
 
         array_index = ReadVDword();
-        
 
         if (var_index == MAGIC_VAR_CODE) // new format
         {
@@ -6492,6 +6496,22 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
                 delete[] pString;
             pString = nullptr;
         }
+        else if (pRecoveryNameTable) // old format, but we may recover it
+        {
+            auto &varName = (*pRecoveryNameTable)[var_index];
+            if (!varName.size())
+            {
+                SetError("Reference '%s' initialized with unknown variable", name);
+                break;
+            }
+            var_index = VarTab.FindVar(varName.c_str());
+            if (var_index == INVALID_VAR_CODE)
+            {
+                SetError("Load - unknown variable '%s'", varName);
+                return false;
+            }
+        }
+ 
 
         if (bSkipVariable)
             break;
@@ -6531,6 +6551,21 @@ bool COMPILER::ReadVariable(char *name, /* DWORD code,*/ bool bDim, uint32_t a_i
             if (bSkipVariable)
                 delete[] pString;
             pString = nullptr;
+        }
+        else if (pRecoveryNameTable) // old format, but we may recover it
+        {
+            auto &varName = (*pRecoveryNameTable)[var_index];
+            if (!varName.size())
+            {
+                SetError("Reference '%s' initialized with unknown variable", name);
+                break;
+            }
+            var_index = VarTab.FindVar(varName.c_str());
+            if (var_index == INVALID_VAR_CODE)
+            {
+                SetError("Load - unknown variable '%s'", varName);
+                return false;
+            }
         }
 
         pString = ReadString();
@@ -6740,7 +6775,98 @@ bool COMPILER::OnLoad()
     return true;
 }
 
-void COMPILER::PrepareEventsToSaving()
+
+void COMPILER::CreateRecoveryFile() const
+{
+    std::ofstream file(RECOVERY_FILE_PATH, std::ios::binary);
+
+    uint64_t intBuff = RECOVERY_FILE_PREFIX_INT;
+    auto charPrefix = RECOVERY_FILE_PREFIX_STRING;
+    file.write((const char*) & intBuff, sizeof(uint64_t));
+    file.write(charPrefix, strlen(charPrefix));
+
+    auto nVarNum = VarTab.GetVarNum();
+    intBuff = nVarNum;
+    file.write(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+
+
+    const VarInfo *last_var{nullptr};
+    for (size_t n = 0; n < nVarNum; n++)
+    {
+        const VarInfo *real_var = VarTab.GetVar(n);
+        if (real_var == nullptr)
+        {
+            intBuff = 0;
+            file.write(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+            continue;
+        }
+
+        intBuff = real_var->name.size();
+        file.write(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+        file.write(real_var->name.c_str(), real_var->name.size());
+    }
+}
+
+bool COMPILER::LoadRecoveryFile(std::vector<std::string> &varNameTable)
+{
+    std::ifstream fl(RECOVERY_FILE_PATH, std::ios::binary | std::ios::in);
+    uint64_t intBuff = 0;
+
+    fl.exceptions(std::fstream::failbit | std::fstream::badbit);
+    try
+    {
+        fl.read(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+
+        if (intBuff != RECOVERY_FILE_PREFIX_INT)
+        {
+            SetError("Recovery file is corrupted");
+            return false;
+        }
+
+        char strPrefix[sizeof(RECOVERY_FILE_PREFIX_STRING) + 1] = {0};
+
+        fl.read(&strPrefix[0], sizeof(RECOVERY_FILE_PREFIX_STRING));
+
+        if (strcmp(strPrefix, RECOVERY_FILE_PREFIX_STRING))
+        {
+            SetError("Recovery file is corrupted");
+            return false;
+        }
+
+        fl.read(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+        size_t nVarNum = intBuff;
+
+        varNameTable.resize(nVarNum);
+
+
+        for (size_t n = 0; n < nVarNum; n++)
+        {
+            fl.read(reinterpret_cast<char *>(&intBuff), sizeof(uint64_t));
+            size_t nameSize = intBuff;
+
+            if (nameSize == 0)
+            {
+                varNameTable[n] = "";
+                continue;
+            }
+
+            std::string buff;
+            buff.resize(nameSize + 1);
+            fl.read(&buff[0], nameSize);
+            varNameTable[n] = std::move(buff);
+        }
+
+        return true;
+    }
+    catch (const std::fstream::failure &e)
+    {
+        SetError("Failed to read recovery file: %s", e.what());
+        return false;
+    }
+}
+
+
+bool COMPILER::PrepareEventsToSaving()
 {
     VarIndex varIndex = CollectAttributeIndex();
 
@@ -6759,8 +6885,8 @@ void COMPILER::PrepareEventsToSaving()
     auto pvi = VarTab.GetVarX(idx);
     if (!pvi)
     {
-        spdlog::error("error during writting event record");
-        return;
+        SetError("error during writting event record");
+        return false;
     }
     auto oldAtt = pvi->value->AttributesClass;
     if (oldAtt)
@@ -6768,39 +6894,63 @@ void COMPILER::PrepareEventsToSaving()
         delete oldAtt;
     }
     pvi->value->AttributesClass = new ATTRIBUTES(GetVSC());
-    EventTab.StoreEventsData(pvi->value->AttributesClass, FuncTab, varIndex);
-    EventMsg.StoreEventsData(pvi->value->AttributesClass, varIndex);
-    return;
+    bool ret =
+        EventTab.StoreEventsData(pvi->value->AttributesClass, FuncTab, varIndex, this);
+    if (!ret)
+    {
+        return false;
+    }
+    ret = EventMsg.StoreEventsData(pvi->value->AttributesClass, varIndex, this);
+    if (!ret)
+    {
+        return false;
+    }
+    return true;
 }
 
-void COMPILER::PrepareEventsBeforeLoading()
+bool COMPILER::PrepareEventsBeforeLoading()
 {
     VarInfo vi;
     vi.name = "__eventsData";
     vi.type = S_TOKEN_TYPE::VAR_OBJECT;
     vi.segment_id = 0;
     vi.elements = 1;
-    VarTab.AddVar(vi);
+    auto idx = VarTab.AddVar(vi);
+    if (idx == INVALID_VAR_CODE)
+    {
+        SetError("unable to create '__eventsData' variable");
+        return false;
+    }
+    return true;
 }
 
-void COMPILER::PrepareEventsAfterLoading()
+bool COMPILER::PrepareEventsAfterLoading()
 {
     auto idx = VarTab.FindVar("__eventsData");
     if (idx == INVALID_VAR_CODE)
     {
-        spdlog::error("no event data available");
-        return;
+        SetWarning("no event data available");
+        return true;
     }
     auto info = VarTab.GetVar(idx);
 
     if (!info->value->AttributesClass)
     {
-        spdlog::error("wrong event record");
-        return;
+        SetWarning("no event data available");
+        return true;
     }
 
-    EventTab.LoadEventsData(info->value->AttributesClass, FuncTab, VarTab);
-    EventMsg.LoadEventsData(info->value->AttributesClass, VarTab);
+    bool ret = EventTab.LoadEventsData(info->value->AttributesClass, FuncTab, VarTab, this);
+    if (!ret)
+    {
+        return false;
+    }
+    ret = EventMsg.LoadEventsData(info->value->AttributesClass, VarTab, this);
+    if (!ret)
+    {
+        return false;
+    }
+    return true;
 }
 
 VarIndex COMPILER::CollectAttributeIndex() const
@@ -6862,7 +7012,11 @@ bool COMPILER::SaveState(std::fstream &fileS)
     if (function_code != INVALID_FUNC_CODE)
         BC_Execute(function_code, pResult);
 
-    PrepareEventsToSaving();
+    auto ret = PrepareEventsToSaving();
+    if (!ret)
+    {
+        return false;
+    }
 
     EXTDATA_HEADER edh;
     auto *pVDat = static_cast<VDATA *>(core_internal.GetScriptVariable("savefile_info"));
@@ -6903,22 +7057,30 @@ bool COMPILER::SaveState(std::fstream &fileS)
 
     // 5. Variables table
     const uint32_t nVarNum = VarTab.GetVarNum();
-    WriteVDword(nVarNum);
 
-    const VarInfo *last_var{nullptr};
+    uint32_t nVarCountForSaving = 0;
+
+    for (n = 0; n < nVarNum; n++)
+    {
+        const VarInfo *real_var = VarTab.GetVar(n);
+        if (real_var)
+        {
+            nVarCountForSaving++;
+        }
+    }
+
+    WriteVDword(nVarCountForSaving);
+
+
     for (n = 0; n < nVarNum; n++)
     {
         const VarInfo *real_var = VarTab.GetVar(n);
         if (real_var == nullptr)
         {
-            real_var = last_var; // preserve old semanthics
-        }
-        else
-        {
-            last_var = real_var;
+            continue;
         }
 
-        SaveString(real_var->name.c_str()); // ***
+        SaveString(real_var->name.c_str());
         SaveVariable(real_var->value.get());
     }
 
@@ -6947,6 +7109,17 @@ bool COMPILER::SaveState(std::fstream &fileS)
 
 bool COMPILER::LoadState(std::fstream &fileS)
 {
+    std::vector<std::string> recoveryVarTable;
+    std::vector<std::string> *pRrecoveryVarTable = nullptr;
+    if (std::filesystem::exists(RECOVERY_FILE_PATH))
+    {
+        if (!LoadRecoveryFile(recoveryVarTable))
+        {
+            return false;
+        }
+        pRrecoveryVarTable = &recoveryVarTable;
+    }
+
     uint32_t n;
     char *pString;
 
@@ -7013,7 +7186,11 @@ bool COMPILER::LoadState(std::fstream &fileS)
             return false;
         delete[] pSegmentName;
     }
-    PrepareEventsBeforeLoading();
+    auto ret = PrepareEventsBeforeLoading();
+    if (!ret)
+    {
+        return false;
+    }
     // 5. Variables table, all variables created during previous step, just read value
     const uint32_t nVarNum = ReadVDword();
     for (n = 0; n < nVarNum; n++)
@@ -7024,11 +7201,15 @@ bool COMPILER::LoadState(std::fstream &fileS)
             SetError("missing variable name");
             return false;
         }
-        ReadVariable(pString /*,n*/);
+        ReadVariable(pString, pRrecoveryVarTable /*,n*/);
         
         delete[] pString;
     }
-    PrepareEventsAfterLoading();
+    ret = PrepareEventsAfterLoading();
+    if (!ret)
+    {
+        return false;
+    }
     // call to script function "OnLoad()"
     OnLoad();
     EventMsg.FixEnitiyIDs();
