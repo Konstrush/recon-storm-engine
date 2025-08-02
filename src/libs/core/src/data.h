@@ -72,7 +72,10 @@ class DATA : public VDATA
     DATA &operator=(const DATA &);
     DATA(S_TOKEN_TYPE _element_type);
     DATA(uint32_t num_of_elements, S_TOKEN_TYPE _element_type);
+
+    DATA(entid_t eid, ATTRIBUTES *pARef);
     ~DATA() override;
+
     void Set(int32_t value) override;
     void SetPtr(uintptr_t value) override;
     bool GetPtr(uintptr_t &value) override;

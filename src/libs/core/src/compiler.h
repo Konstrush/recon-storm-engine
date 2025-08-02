@@ -90,6 +90,7 @@ enum COMPILER_STAGE
 
 class CoreImpl;
 
+typedef std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> VarIndex;
 class COMPILER : public VIRTUAL_COMPILER
 {
     friend CoreImpl;
@@ -127,8 +128,9 @@ class COMPILER : public VIRTUAL_COMPILER
     void SetProgramDirectory(const char *dir_name);
     VDATA *ProcessEvent(const char *event_name, MESSAGE message);
     VDATA *ProcessEvent(const char *event_name);
-    void SetEventHandler(const char *event_name, const char *func_name, int32_t flag, bool bStatic = false);
-    void DelEventHandler(const char *event_name, const char *func_name);
+    void SetEventHandler(ATTRIBUTES *pObject, const char *event_name, const char *func_name, int32_t flag,
+                         bool bStatic);
+    void DelEventHandler(ATTRIBUTES *pObject, const char *event_name, const char *func_name);
 
     bool Completed()
     {
@@ -219,7 +221,7 @@ class COMPILER : public VIRTUAL_COMPILER
     char *ReadString();
 
     void SaveVariable(DATA *pV, bool bdim = false);
-    bool ReadVariable(char *name, /*DWORD code,*/ bool bdim = false, uint32_t a_index = 0);
+    bool ReadVariable(char *name, std::vector<std::string> *pRecoveryNameTable, bool bdim = false, uint32_t a_index = 0);
     bool FindReferencedVariable(DATA *pRef, uint32_t &var_index, uint32_t &array_index);
     bool FindReferencedVariableByRootA(ATTRIBUTES *pA, uint32_t &var_index, uint32_t &array_index);
     ATTRIBUTES *TraceARoot(ATTRIBUTES *pA, const char *&pAccess);
@@ -267,6 +269,13 @@ class COMPILER : public VIRTUAL_COMPILER
     // printout script functions usage
     void PrintoutUsage();
 
+    bool PrepareEventsToSaving();
+    bool PrepareEventsBeforeLoading();
+    bool PrepareEventsAfterLoading();
+
+    void CreateRecoveryFile() const;
+    bool LoadRecoveryFile(std::vector<std::string> &v);
+
 private:
     [[nodiscard]] std::filesystem::path GetSegmentCachePath(const SEGMENT_DESC &segment) const;
 
@@ -287,6 +296,15 @@ private:
     void SaveScriptLibrariesToCache(storm::script_cache::BufferWriter &writer);
     void SaveEventHandlersToCache(storm::script_cache::BufferWriter &writer);
     void SaveByteCodeToCache(storm::script_cache::BufferWriter &writer, const SEGMENT_DESC &segment);
+
+    VarIndex CollectAttributeIndex() const;
+    void CollectAttributeIndexStep(DATA *pV, const std::string &varName, std::vector<size_t> &indexVector, VarIndex &result) const;
+    VDATA *ProcessEventFunctions(std::vector<EVENT_FUNC_INFO> &eventFuncVec, uint32_t event_code, MESSAGE *pMem,
+                                 uint64_t &nTicks);
+    VDATA *ProcessEventFunc(std::vector<EVENT_FUNC_INFO> &eventFuncVec, uint32_t func_idx, uint32_t event_code,
+                            MESSAGE *pMem, uint64_t &nTicks);
+
+    void SetEventFormat(const char *eventName, std::string format);
 
     COMPILER_STAGE CompilerStage;
     STRINGS_LIST LabelTable;

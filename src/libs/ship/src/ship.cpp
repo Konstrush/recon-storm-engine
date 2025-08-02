@@ -1404,7 +1404,8 @@ void SHIP::FakeFire(const char *sBort, float fRandTime)
                 CVECTOR vDirTemp = mRot * vDir;
                 float fDir = NormalizeAngle(atan2f(vDirTemp.x, vDirTemp.z));
 
-                core.PostEvent("Ship_FakeFire", (uint32_t)(1000 * fRandTime * rand() / RAND_MAX), "ffff", vCurPos.x,
+                core.PostEvent(nullptr, "Ship_FakeFire", (uint32_t)(1000 * fRandTime * rand() / RAND_MAX), "ffff",
+                               vCurPos.x,
                                vCurPos.y, vCurPos.z, fDir);
             }
         }

@@ -622,7 +622,7 @@ void InterfaceBackScene::ExecuteMenu(int32_t nMenuIndex)
 {
     if (nMenuIndex < 0 || nMenuIndex >= m_aMenuDescr.size())
         return;
-    core.PostEvent("backgroundcommand", 1, "s", m_aMenuDescr[nMenuIndex]->sEventName.c_str());
+    core.PostEvent(nullptr, "backgroundcommand", 1, "s", m_aMenuDescr[nMenuIndex]->sEventName.c_str());
 }
 
 int32_t InterfaceBackScene::CheckMousePos(float fX, float fY)

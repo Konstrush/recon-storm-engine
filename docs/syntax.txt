@@ -133,6 +133,22 @@ int		argb(int a,int r,int g,int b);
 void	DeleteEntities();
 void	ClearEvents();
 
+
+SetEventHandlerForObject(object &object_ref, string event_name, string function_name, int post);
+DelEventHandlerForObject(object &object_ref, string event_name, string function_name);
+
+Event(string event_name, string format, ...);
+EventForObject(object &object_ref, string event_name, string format, ...);
+
+PostEvent(string event_name, int time, string format, ...); // post deffered event. time in ms
+PostEventForObject(object &object_ref, string event_name, int time, string format, ...);
+SetEventFormat(string event_name, string format);
+
+// Will not be reset by ClearEvents()
+SetEventStaticHandler(string event_name, string function_name, int post);
+SetEventStaticHandlerForObject(object &object_ref, string event_name, string function_name, int post);
+
+
 // COMMENTS
 
 . Code send entity id "i" to script and it cames as aref variable into script (GetEventData())

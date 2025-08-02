@@ -168,7 +168,7 @@ uint64_t CAviPlayer::ProcessMessage(MESSAGE &message)
         if (!PlayMedia(vidName.c_str()))
         {
             CleanupInterfaces();
-            core.PostEvent("ievntEndVideo", 1, nullptr);
+            core.PostEvent(nullptr, "ievntEndVideo", 1, nullptr);
         }
         break;
     }

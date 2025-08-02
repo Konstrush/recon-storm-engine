@@ -1,6 +1,8 @@
 #include "s_eventtab.h"
 
 #include "string_compare.hpp"
+#include "message.h"
+
 #define HASHT_INDEX(x) (uint8_t)(x >> 24)
 #define HASHT_CODE(x) (x & 0xffffff)
 #define HASH2INDEX(x) (uint8_t)(x & 0x2f)
@@ -25,11 +27,22 @@ void S_EVENTTAB::Clear()
     {
         for (uint32_t n = 0; n < Event_num[i]; n++)
         {
-            for (uint32_t m = 0; m < pTable[i][n].elements; m++)
+            for (uint32_t m = 0; m < pTable[i][n].pFuncInfo.size(); m++)
             {
                 if (!pTable[i][n].pFuncInfo[m].bStatic)
                     pTable[i][n].pFuncInfo[m].status = FSTATUS_DELETED;
             }
+
+
+            for (auto &elem : pTable[i][n].pFuncInfoForObjects)
+            {
+                for (auto &handler : elem.second)
+                {
+                    if (!handler.bStatic)
+                        handler.status = FSTATUS_DELETED;
+                }
+            }
+
 
             // if(pTable[n].pFuncInfo) delete pTable[n].pFuncInfo;
             // if(pTable[n].name) delete pTable[n].name;
@@ -65,86 +78,60 @@ bool S_EVENTTAB::GetEvent(EVENTINFO &ei, uint32_t event_code)
     return true;
 }
 
-uint32_t S_EVENTTAB::AddEventHandler(const char *event_name, uint32_t func_code, uint32_t func_segment_id, int32_t flag,
+
+uint32_t S_EVENTTAB::AddEventHandler(ATTRIBUTES *pObject, const char *event_name, uint32_t func_code, uint32_t func_segment_id, int32_t flag,
                                      bool bStatic)
 {
     uint32_t i;
-
+    uint32_t eventPos = 0;
     const auto hash = MakeHashValue(event_name);
 
     const auto ti = HASH2INDEX(hash);
 
-    for (uint32_t n = 0; n < Event_num[ti]; n++)
+    EVENTINFO *ei = FindEventByName(event_name, true, &eventPos);
+
+    auto funcInfoVecP = &ei->pFuncInfo;
+
+    if (pObject)
     {
-        if (pTable[ti][n].hash == hash)
+        auto it = ei->pFuncInfoForObjects.find(pObject);
+        if (it == ei->pFuncInfoForObjects.end())
         {
-            if (!storm::iEquals(event_name, pTable[ti][n].name))
-                continue;
-            // event already in list
-            for (i = 0; i < pTable[ti][n].elements; i++)
-            {
-                // event handler function already set
-                if (pTable[ti][n].pFuncInfo[i].func_code == func_code)
-                {
-                    /*if(pTable[ti][n].pFuncInfo[i].status == FSTATUS_DELETED)
-                    {
-                      trace("pTable[ti][n].pFuncInfo[i].status == FSTATUS_DELETED : %s",pTable[ti][n].name);
-                    }*/
-                    // return n;
-                    pTable[ti][n].pFuncInfo[i].status = FSTATUS_NORMAL;
-
-                    return (((ti << 24) & 0xff000000) | (n & 0xffffff));
-                }
-            }
-            // add function
-            i = pTable[ti][n].elements;
-            pTable[ti][n].elements++;
-            pTable[ti][n].pFuncInfo.resize(pTable[ti][n].elements);
-
-            pTable[ti][n].pFuncInfo[i].func_code = func_code;
-            pTable[ti][n].pFuncInfo[i].segment_id = func_segment_id;
-            if (flag)
-                pTable[ti][n].pFuncInfo[i].status = FSTATUS_NEW;
-            else
-                pTable[ti][n].pFuncInfo[i].status = FSTATUS_NORMAL;
-            pTable[ti][n].pFuncInfo[i].bStatic = bStatic;
-            // return n;
-            return (((ti << 24) & 0xff000000) | (n & 0xffffff));
+            ei->pFuncInfoForObjects[pObject] = std::vector<EVENT_FUNC_INFO>();
+            funcInfoVecP = &ei->pFuncInfoForObjects[pObject];
+        }
+        else
+        {
+            funcInfoVecP = &it->second;
         }
     }
 
-    // add new event
-    if (Event_num[ti] >= Buffer_size[ti])
+    auto &funcInfoVec = *funcInfoVecP;
+
+    for (i = 0; i < funcInfoVec.size(); i++)
     {
-        Buffer_size[ti] += BUFFER_BLOCK_SIZE;
-        pTable[ti].resize(Buffer_size[ti]);
+        // event handler function already set
+        if (funcInfoVec[i].func_code == func_code)
+        {
+            funcInfoVec[i].status = FSTATUS_NORMAL;
+            funcInfoVec[i].bStatic = bStatic;
+            return (((ti << 24) & 0xff000000) | (eventPos & 0xffffff));
+        }
     }
+    // add function
+    i = funcInfoVec.size();
+    
+    funcInfoVec.resize(i + 1);
 
-    pTable[ti][Event_num[ti]].elements = 1;
-    pTable[ti][Event_num[ti]].hash = hash;
-    pTable[ti][Event_num[ti]].name = nullptr;
-
-    pTable[ti][Event_num[ti]].pFuncInfo.push_back(EVENT_FUNC_INFO{});
-    pTable[ti][Event_num[ti]].pFuncInfo[0].func_code = func_code;
-    pTable[ti][Event_num[ti]].pFuncInfo[0].segment_id = func_segment_id;
+    funcInfoVec[i].func_code = func_code;
+    funcInfoVec[i].segment_id = func_segment_id;
     if (flag)
-        pTable[ti][Event_num[ti]].pFuncInfo[0].status = FSTATUS_NEW;
+        funcInfoVec[i].status = FSTATUS_NEW;
     else
-        pTable[ti][Event_num[ti]].pFuncInfo[0].status = FSTATUS_NORMAL;
-    pTable[ti][Event_num[ti]].pFuncInfo[0].bStatic = bStatic;
-
-    if constexpr (true) // bKeepName)
-    {
-        if (event_name)
-        {
-            const auto len = strlen(event_name) + 1;
-            pTable[ti][Event_num[ti]].name = new char[len];
-            memcpy(pTable[ti][Event_num[ti]].name, event_name, len);
-        }
-    }
-    Event_num[ti]++;
-    // return (Event_num[ti] - 1);
-    return (((ti << 24) & 0xff000000) | ((Event_num[ti] - 1) & 0xffffff));
+        funcInfoVec[i].status = FSTATUS_NORMAL;
+    funcInfoVec[i].bStatic = bStatic;
+    // return n;
+    return (((ti << 24) & 0xff000000) | (eventPos & 0xffffff));
 }
 
 uint32_t S_EVENTTAB::MakeHashValue(const char *string)
@@ -166,27 +153,7 @@ uint32_t S_EVENTTAB::MakeHashValue(const char *string)
     return hval;
 }
 
-bool S_EVENTTAB::DelEventHandler(const char *event_name, uint32_t func_code)
-{
-    if (event_name == nullptr)
-        return false;
-    const auto hash = MakeHashValue(event_name);
-
-    const auto ti = HASH2INDEX(hash);
-
-    for (uint32_t n = 0; n < Event_num[ti]; n++)
-    {
-        if (pTable[ti][n].hash == hash)
-            if (storm::iEquals(pTable[ti][n].name, event_name))
-            {
-                return DelEventHandler(ti, n, func_code);
-                // return;
-            }
-    }
-    return false;
-}
-
-void S_EVENTTAB::SetStatus(const char *event_name, uint32_t func_code, uint32_t status)
+void S_EVENTTAB::SetStatus(ATTRIBUTES *pObject, const char *event_name, uint32_t func_code, uint32_t status)
 {
     if (event_name == nullptr)
         return;
@@ -199,34 +166,54 @@ void S_EVENTTAB::SetStatus(const char *event_name, uint32_t func_code, uint32_t 
         if (pTable[ti][n].hash == hash)
             if (storm::iEquals(pTable[ti][n].name, event_name))
             {
-                for (uint32_t i = 0; i < pTable[ti][n].elements; i++)
+                if (!pObject)
                 {
-                    if (pTable[ti][n].pFuncInfo[i].func_code == func_code)
+                    for (uint32_t i = 0; i < pTable[ti][n].pFuncInfo.size(); i++)
                     {
-                        pTable[ti][n].pFuncInfo[i].status = status;
-                        return;
+                        if (pTable[ti][n].pFuncInfo[i].func_code == func_code)
+                        {
+                            pTable[ti][n].pFuncInfo[i].status = status;
+                            return;
+                        }
                     }
                 }
+                else
+                {
+                    auto it = pTable[ti][n].pFuncInfoForObjects.find(pObject);
+                    if (it == pTable[ti][n].pFuncInfoForObjects.end())
+                        return;
+
+                    for (auto &handler : it->second)
+                    {
+                        if (handler.func_code == func_code)
+                        {
+                            handler.status = status;
+                            return;
+                        }
+                    }
+                }
+                
             }
     }
 }
 
-bool S_EVENTTAB::DelEventHandler(uint8_t ti, uint32_t event_code, uint32_t func_code, bool bDelStatic)
+bool S_EVENTTAB::DelEventHandler(std::vector<EVENT_FUNC_INFO> &funcInfo, uint32_t func_code,
+                                 bool bDelStatic)
 {
+
     if (!bDelStatic)
     {
-        if (pTable[ti][event_code].pFuncInfo[func_code].bStatic)
+        if (funcInfo[func_code].bStatic)
         {
             return false;
         }
     }
 
-    for (auto n = func_code; n < (pTable[ti][event_code].elements - 1); n++)
+    for (auto n = func_code; n < funcInfo.size() - 1; n++)
     {
-        pTable[ti][event_code].pFuncInfo[n] = pTable[ti][event_code].pFuncInfo[n + 1];
+        funcInfo[n] = funcInfo[n + 1];
     }
-    pTable[ti][event_code].elements--;
-    pTable[ti][event_code].pFuncInfo.resize(pTable[ti][event_code].elements);
+    funcInfo.resize(funcInfo.size() - 1);
     return true;
 }
 
@@ -236,14 +223,27 @@ void S_EVENTTAB::InvalidateBySegmentID(uint32_t segment_id)
     {
         for (uint32_t n = 0; n < Event_num[ti]; n++)
         {
-            for (uint32_t i = 0; i < pTable[ti][n].elements; i++)
+            for (uint32_t i = 0; i < pTable[ti][n].pFuncInfo.size(); i++)
             {
                 if (pTable[ti][n].pFuncInfo[i].segment_id == segment_id)
                 {
-                    if (DelEventHandler(static_cast<uint8_t>(ti), n, i, true))
+                    if (DelEventHandler(pTable[ti][n].pFuncInfo, i, true))
                         i = 0;
                 }
             }
+
+            for (auto &elem : pTable[ti][n].pFuncInfoForObjects)
+            {
+                for (uint32_t i = 0; i < elem.second.size(); i++)
+                {
+                    if (elem.second[i].segment_id == segment_id)
+                    {
+                        if (DelEventHandler(elem.second, i, true))
+                            i--;
+                    }
+                }
+            }
+
         }
     }
 }
@@ -269,15 +269,312 @@ void S_EVENTTAB::ProcessFrame()
         for (uint32_t n = 0; n < Event_num[ti]; n++)
         {
             // delete old handlers
-            for (uint32_t i = 0; i < pTable[ti][n].elements; i++)
+            for (uint32_t i = 0; i < pTable[ti][n].pFuncInfo.size(); i++)
             {
                 if (pTable[ti][n].pFuncInfo[i].status == FSTATUS_DELETED)
                 {
-                    DelEventHandler(static_cast<uint8_t>(ti), n, i);
+                    DelEventHandler(pTable[ti][n].pFuncInfo, i);
                     i = 0;
                 }
                 else
+                {
                     pTable[ti][n].pFuncInfo[i].status = FSTATUS_NORMAL;
+                }
+            }
+
+            for (auto &elem : pTable[ti][n].pFuncInfoForObjects)
+            {
+                for (uint32_t i = 0; i < elem.second.size(); i++)
+                {
+                    if (elem.second[i].status == FSTATUS_DELETED)
+                    {
+                        if (DelEventHandler(elem.second, i, true))
+                            i--;
+                    }
+                    else
+                    {
+                        elem.second[i].status = FSTATUS_NORMAL;
+                    }
+                }
             }
         }
+}
+
+bool S_EVENTTAB::StoreEventsData(ATTRIBUTES *attr, FuncTable &FuncTab,
+                                 std::unordered_map<void *, std::pair<std::string, std::vector<size_t>>> &varIndex,
+                                 VIRTUAL_COMPILER *compiler)
+{
+    auto &eventTable = attr->CreateAttribute(std::string("eventTable"));
+    
+    for (size_t ti = 0; ti < HASHTABLE_SIZE; ti++)
+    {
+        for (size_t n = 0; n < pTable[ti].size(); n++)
+        {
+            auto &curEvent = pTable[ti][n];
+
+            auto eventName = curEvent.name;
+            if (!eventName)
+            {
+                continue;
+            }
+
+            auto &curEventRecord = eventTable.CreateAttribute(std::string(curEvent.name));
+
+            if (curEvent.format != std::nullopt)
+            {
+                curEventRecord.CreateAttribute(std::string("format"), curEvent.format.value().c_str());
+            }
+
+            auto &commonEventTable = curEventRecord.CreateAttribute(std::string("common"));
+            for (size_t i = 0; i < curEvent.pFuncInfo.size(); i++)
+            {
+                auto &curFunInfo = curEvent.pFuncInfo[i];
+                if (curFunInfo.status == FSTATUS_DELETED)
+                    continue;
+
+                FuncInfo fi;
+                FuncTab.GetFunc(fi, curFunInfo.func_code);
+                const char *isStatic = curFunInfo.bStatic ? "1" : "0";
+                commonEventTable.CreateAttribute(fi.name, isStatic);
+            }
+
+            auto &objectEventTable = curEventRecord.CreateAttribute(std::string("object"));
+            size_t counter = 0;
+            for (auto& cur : curEvent.pFuncInfoForObjects)
+            {
+                auto &curObjectEventTable = objectEventTable.CreateAttribute(fmt::format("{}", counter));
+                counter++;
+
+
+                if (!StoreAttributesRef(&curObjectEventTable, cur.first, varIndex, compiler))
+                {
+                    compiler->SetError("Attempting to save handler for local object");
+                    return false;
+                }
+
+                auto &curObjectHandlerTable = curObjectEventTable.CreateAttribute(std::string("handlers"));
+                for (size_t i = 0; i < cur.second.size(); i++)
+                {
+                    auto &curFunInfo = cur.second[i];
+                    if (curFunInfo.status == FSTATUS_DELETED)
+                        continue;
+
+                    FuncInfo fi;
+                    FuncTab.GetFunc(fi, curFunInfo.func_code);
+                    const char *isStatic = curFunInfo.bStatic ? "1" : "0";
+                    curObjectHandlerTable.CreateAttribute(fi.name, isStatic);
+                }
+            }
+        }
+    }
+    return true;
+}
+bool S_EVENTTAB::LoadEventsData(ATTRIBUTES *attr, FuncTable &FuncTab, VarTable &VarTab, VIRTUAL_COMPILER *compiler)
+{
+    auto eventTable = attr->GetAttributeClass(std::string("eventTable"));
+    if (!eventTable)
+    {
+        compiler->SetError("eventTable not found");
+        return false;
+    }
+
+
+    auto eventCount = eventTable->GetAttributesNum();
+    for (size_t i = 0; i < eventCount; i++)
+    {
+        auto curEventRecord = eventTable->GetAttributeClass(i);
+        if (!curEventRecord)
+        {
+            compiler->SetError("eventTable[%u] not found", (unsigned)i);
+            return false;
+        }
+
+        auto eventName = curEventRecord->GetThisName();
+
+        auto formatEventRecord = curEventRecord->GetAttributeClass(std::string("format"));
+        if (formatEventRecord)
+        {
+            SetEventFormat(eventName, formatEventRecord->GetValue());
+        }
+
+        auto commonEventTable = curEventRecord->GetAttributeClass(std::string("common"));
+
+        if (!commonEventTable)
+        {
+            compiler->SetError("eventTable[%u].common not found", (unsigned)i);
+            return false;
+        }
+        auto eventFuncCount = commonEventTable->GetAttributesNum();
+
+        for (size_t j = 0; j < eventFuncCount; j++)
+        {
+            auto curFuncRecord = commonEventTable->GetAttributeClass(j);
+            if (!curFuncRecord)
+            {
+                compiler->SetError("eventTable.common.%s[%u] not found", eventName, (unsigned)j);
+                return false;
+            }
+            auto funcName = curFuncRecord->GetThisName();
+
+
+            FuncInfo fi;
+            const uint32_t func_code = FuncTab.FindFunc(funcName);
+            if (func_code == INVALID_FUNC_CODE)
+            {
+                compiler->SetError("Invalid function code douring event loading");
+                return false;
+            }
+
+            if (!FuncTab.GetFunc(fi, func_code))
+            {
+                compiler->SetError("funcion not found error");
+                return false;
+            }
+
+            bool isStatic = curFuncRecord->GetValue() == std::string("1");
+            AddEventHandler(nullptr, eventName, func_code, fi.segment_id, 1, isStatic);
+        }
+
+        auto objectEventTable = curEventRecord->GetAttributeClass(std::string("object"));
+
+        if (!objectEventTable)
+        {
+            compiler->SetError("eventTable[%u].object not found", (unsigned)i);
+            return false;
+        }
+
+        auto objectHandlersCount = objectEventTable->GetAttributesNum();
+
+        for (size_t k = 0; k < objectHandlersCount; k++)
+        {
+            auto curObjectHandlerRecord = objectEventTable->GetAttributeClass(fmt::format("{}", k));
+            if (!curObjectHandlerRecord)
+            {
+                compiler->SetError("eventTable[%u].object[%u] not found", (unsigned)i, (unsigned)k);
+                return false;
+            }
+
+            ATTRIBUTES *objectPointer = LoadAttributesRef(curObjectHandlerRecord, VarTab, compiler);
+            if (!objectPointer)
+            {
+                compiler->SetError("stored attribute reference not found");
+                return false;
+            }
+
+            auto curObjectHandlerListRecord = curObjectHandlerRecord->GetAttributeClass("handlers");
+            if (!curObjectHandlerListRecord)
+            {
+                compiler->SetError("eventTable[%u].object[%u].handlers not found", (unsigned)i, (unsigned)k);
+                return false;
+            }
+
+            auto eventFuncCount = curObjectHandlerListRecord->GetAttributesNum();
+
+            for (size_t j = 0; j < eventFuncCount; j++)
+            {
+                auto curFuncRecord = curObjectHandlerListRecord->GetAttributeClass(j);
+                if (!curFuncRecord)
+                {
+                    compiler->SetError("eventTable.common.%s[%u] not found", eventName, (unsigned)j);
+                    return false;
+                }
+                auto funcName = curFuncRecord->GetThisName();
+
+                FuncInfo fi;
+                const uint32_t func_code = FuncTab.FindFunc(funcName);
+                if (func_code == INVALID_FUNC_CODE)
+                {
+                    compiler->SetError("Invalid function code douring event loading");
+                    return false;
+                }
+
+                if (!FuncTab.GetFunc(fi, func_code))
+                {
+                    compiler->SetError("function not found error");
+                    return false;
+                }
+
+                bool isStatic = curFuncRecord->GetValue() == std::string("1");
+                AddEventHandler(objectPointer, eventName, func_code, fi.segment_id, 1, isStatic);
+            }
+        }
+
+    }
+    return true;
+}
+
+
+EVENTINFO *S_EVENTTAB::FindEventByName(const char *eventName, bool createIsNotFound, uint32_t *pEventPos)
+{
+    uint32_t i;
+    uint32_t eventPos = 0;
+    const auto hash = MakeHashValue(eventName);
+
+    const auto ti = HASH2INDEX(hash);
+
+    EVENTINFO *ei = nullptr;
+    for (; eventPos < Event_num[ti]; eventPos++)
+    {
+        if (pTable[ti][eventPos].hash == hash)
+        {
+            if (storm::iEquals(eventName, pTable[ti][eventPos].name))
+            {
+                // event already in list
+                ei = &pTable[ti][eventPos];
+                break;
+            }
+        }
+    }
+
+    if (!ei && !createIsNotFound)
+    {
+        return nullptr;
+    } 
+    else if (!ei)
+    {
+        if (Event_num[ti] >= Buffer_size[ti])
+        {
+            Buffer_size[ti] += BUFFER_BLOCK_SIZE;
+            pTable[ti].resize(Buffer_size[ti]);
+        }
+
+        pTable[ti][Event_num[ti]].hash = hash;
+        pTable[ti][Event_num[ti]].name = nullptr;
+
+        if constexpr (true) // bKeepName)
+        {
+            if (eventName)
+            {
+                const auto len = strlen(eventName) + 1;
+                pTable[ti][Event_num[ti]].name = new char[len];
+                memcpy(pTable[ti][Event_num[ti]].name, eventName, len);
+            }
+        }
+        ei = &pTable[ti][Event_num[ti]];
+        eventPos = Event_num[ti];
+        Event_num[ti]++;
+    }
+    if (pEventPos)
+    {
+        *pEventPos = eventPos;
+    }
+    return ei;
+}
+
+void S_EVENTTAB::SetEventFormat(const char *eventName, std::string format)
+{
+    auto ei = FindEventByName(eventName, true);
+    ei->format = format;
+}
+
+std::optional<std::string> S_EVENTTAB::GetEventFormat(const char *eventName)
+{
+    auto ei = FindEventByName(eventName, false);
+
+    if (!ei)
+    {
+        return std::nullopt;
+    }
+
+    return ei->format;
 }

@@ -365,7 +365,7 @@ uint64_t CoreImpl::Send_Message(entid_t Destination, const char *Format, ...)
     return rc;
 }
 
-uint32_t CoreImpl::PostEvent(const char *Event_name, uint32_t post_time, const char *Format, ...)
+uint32_t CoreImpl::PostEvent(ATTRIBUTES *pObject, const char *Event_name, uint32_t post_time, const char *Format, ...)
 {
     MESSAGE *pMS;
     MESSAGE message;
@@ -378,6 +378,11 @@ uint32_t CoreImpl::PostEvent(const char *Event_name, uint32_t post_time, const c
         va_list args;
         va_start(args, Format);
         message.ResetVA(Format, args);
+
+        if (pObject)
+        {
+            pMS->SetThisObject(pObject);
+        }
         pMS->Reset(Format);
 
         auto bAction = true;

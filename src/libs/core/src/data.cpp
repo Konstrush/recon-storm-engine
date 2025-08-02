@@ -113,6 +113,28 @@ DATA::DATA(S_TOKEN_TYPE _element_type)
     nGlobalVarTableIndex = 0xffffffff;
 }
 
+DATA::DATA(entid_t eid, ATTRIBUTES *pARef) : pValue(0)
+{
+    Data_type = VAR_OBJECT;
+    Number_of_elements = 0;
+    lValue = 0;
+    fValue = 0;
+    bArray = false;
+    bEntity = false;
+    pVCompiler = nullptr;
+    Segment_id = 0;
+    object_id = eid;
+    pReference = nullptr;
+    AttributesClass = nullptr;
+    nGlobalVarTableIndex = 0xffffffff;
+
+    if (pARef)
+    {
+        auto attrCopy = pARef->Copy();
+        AttributesClass = new ATTRIBUTES(std::move(attrCopy));
+    }
+}
+
 DATA::DATA(uint32_t _num_of_elements, S_TOKEN_TYPE _element_type)
     : pValue(0), object_id(0)
 {

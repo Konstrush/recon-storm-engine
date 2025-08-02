@@ -270,12 +270,12 @@ void Fader::Execute(uint32_t delta_time)
         eventStart = false;
         if (!fadeIn)
         {
-            core.PostEvent("FaderEvent_StartFade", 0, "li", fadeIn, GetId());
+            core.PostEvent(nullptr, "FaderEvent_StartFade", 0, "li", fadeIn, GetId());
             // core.Trace("FaderEvent_StartFade");
         }
         else
         {
-            core.PostEvent("FaderEvent_StartFadeIn", 0, "li", fadeIn, GetId());
+            core.PostEvent(nullptr, "FaderEvent_StartFadeIn", 0, "li", fadeIn, GetId());
             //    core.Trace("FaderEvent_StartFadeIn");
         }
     }
@@ -285,12 +285,12 @@ void Fader::Execute(uint32_t delta_time)
         deleteMe = isAutodelete;
         if (!fadeIn)
         {
-            core.PostEvent("FaderEvent_EndFade", 0, "li", fadeIn, GetId());
+            core.PostEvent(nullptr, "FaderEvent_EndFade", 0, "li", fadeIn, GetId());
             // core.Trace("FaderEvent_EndFade");
         }
         else
         {
-            core.PostEvent("FaderEvent_EndFadeIn", 0, "li", fadeIn, GetId());
+            core.PostEvent(nullptr, "FaderEvent_EndFadeIn", 0, "li", fadeIn, GetId());
             //    core.Trace("FaderEvent_EndFadeIn");
         }
     }
