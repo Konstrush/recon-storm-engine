@@ -66,13 +66,21 @@ void BIShipIcon::Draw()
         const int32_t nStartI = 0;
 
         // ship
-        if (m_nShipSquareQ > 0)
+        for (int i = 0; i < m_nShipSquareQ; i++)
         {
-            m_pRS->TextureSet(0, m_nShipTextureID);
-            m_pRS->DrawBuffer(m_nVBufID, sizeof(BI_COLOR_VERTEX), m_nIBufID, nStartV, m_nShipSquareQ * 4, nStartI,
-                              m_nShipSquareQ * 2, "battle_colorRectangle");
+            int32_t textureID = m_nShipTextureID;
+
+            if (m_Ship[i].nTextureNum >= 0 && m_Ship[i].nTextureNum < m_aTexture.size())
+            {
+                textureID = m_aTexture[m_Ship[i].nTextureNum].nTextureID;
+            }
+            m_pRS->TextureSet(0, textureID);
+            m_pRS->DrawBuffer(m_nVBufID, sizeof(BI_COLOR_VERTEX), m_nIBufID, nStartV, 4, nStartI,
+                              2, "battle_colorRectangle");
+
+            nStartV += 4;
         }
-        nStartV += m_nShipSquareQ * 4;
+        
 
         // back
         if (m_nBackSquareQ > 0)
@@ -177,6 +185,30 @@ void BIShipIcon::Init(ATTRIBUTES *pRoot, ATTRIBUTES *pA)
     m_ShipNameFontOffset.y = 40;
 
     m_nCommandListVerticalOffset = -48;
+    ATTRIBUTES *pAList, *pATextures;
+
+    pAList = nullptr;
+    if (m_pARoot)
+        pAList = m_pARoot->GetAttributeClass("IconTextures");
+
+    pATextures = nullptr;
+    if (pAList)
+        pATextures = pAList->GetAttributeClass("list");
+    if (pATextures)
+    {
+        size_t q = pATextures->GetAttributesNum();
+        for (int n = 0; n < q; n++)
+        {
+            auto *pA = pATextures->GetAttributeClass(n);
+            if (pA)
+            {
+                TextureDescr td = {pA->GetAttribute("name") ? pA->GetAttribute("name") : std::string()};
+                td.nTextureID = m_pRS->TextureCreate(td.sFileName.c_str());
+                m_aTexture.push_back(td);
+            }
+        }
+    }
+
 
     for (n = 0; n < MAX_SHIP_QUANTITY; n++)
     {
@@ -482,6 +514,7 @@ int32_t BIShipIcon::CalculateShipQuantity()
         m_Ship[0].nMaxHP = pSD->maxHP;
         m_Ship[0].nMaxSP = pSD->maxSP;
         m_Ship[0].nShipClass = GetShipClass(m_Ship[0].nCharacterIndex);
+        m_Ship[0].nTextureNum = pSD->textureNum;
         GetShipUVFromPictureIndex(pSD->pictureNum, m_Ship[0].rUV);
         m_Ship[0].sShipName = pSD->pAttr ? pSD->pAttr->GetAttribute("name") : "noname";
         m_nShipQuantity++;
@@ -500,6 +533,7 @@ int32_t BIShipIcon::CalculateShipQuantity()
             m_Ship[m_nShipQuantity].nMaxHP = pSD->maxHP;
             m_Ship[m_nShipQuantity].nMaxSP = pSD->maxSP;
             m_Ship[m_nShipQuantity].nShipClass = GetShipClass(m_Ship[m_nShipQuantity].nCharacterIndex);
+            m_Ship[m_nShipQuantity].nTextureNum = pSD->textureNum;
             GetShipUVFromPictureIndex(pSD->pictureNum, m_Ship[m_nShipQuantity].rUV);
             m_Ship[m_nShipQuantity].sShipName = pSD->pAttr ? pSD->pAttr->GetAttribute("name") : "noname";
             m_nShipQuantity++;

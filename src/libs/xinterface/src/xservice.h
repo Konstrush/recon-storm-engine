@@ -2,6 +2,7 @@
 
 #include "vx_service.h"
 #include "xdefines.h"
+#include <unordered_set>
 
 class XSERVICE : public VXSERVICE
 {
@@ -52,6 +53,7 @@ class XSERVICE : public VXSERVICE
 
     void ReleaseAll() override;
 
+    void LoadPicturesInfo(const std::string &sIniFileName) override;
   protected:
     void LoadAllPicturesInfo();
 
@@ -60,8 +62,9 @@ class XSERVICE : public VXSERVICE
 
     int32_t m_dwListQuantity;
     int32_t m_dwImageQuantity;
-    IMAGELISTDESCR *m_pList;
-    PICTUREDESCR *m_pImage;
+    std::vector<IMAGELISTDESCR> m_pList;
+    std::vector<PICTUREDESCR> m_pImage;
+    std::unordered_set<std::string> m_sFilesLoaded;
 
     // Scale factors
     float m_fWScale;

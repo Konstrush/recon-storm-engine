@@ -9,8 +9,11 @@
 #include "texture_sequence/texture_sequence.h"
 #include "aviplayer/aviplayer.h"
 #include "xinterface.h"
+#include "xservice.h"
 
 CREATE_SERVICE(STRSERVICE)
+
+CREATE_SERVICE(XSERVICE)
 
 CREATE_SCRIPTLIBRIARY(SCRIPT_INTERFACE_FUNCTIONS)
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include "service.h"
 
 #define TEXTURE_MODIFY_NONE 0
 #define TEXTURE_MODIFY_HORZFLIP 1
@@ -12,7 +14,7 @@ struct XYRECT;
 struct FXYPOINT;
 struct XYPOINT;
 
-class VXSERVICE
+class VXSERVICE : public SERVICE
 {
   public:
     virtual ~VXSERVICE() = default;
@@ -37,4 +39,5 @@ class VXSERVICE
     virtual int32_t GetImageNum(const char *sImageListName, const char *sImageName) = 0;
 
     virtual void ReleaseAll() = 0;
+    virtual void LoadPicturesInfo(const std::string &) = 0;
 };

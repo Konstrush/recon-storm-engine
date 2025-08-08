@@ -90,8 +90,6 @@ STRSERVICE::STRSERVICE()
     m_sLanguageDir = nullptr;
 
     m_nStringQuantity = 0;
-    m_psStrName = nullptr;
-    m_psString = nullptr;
 
     m_pUsersBlocks = nullptr;
 
@@ -106,22 +104,16 @@ STRSERVICE::~STRSERVICE()
     CloseUsersStringFile(m_nDialogSourceFile);
     m_nDialogSourceFile = -1;
 
-    if (m_psStrName != nullptr)
-    {
-        for (i = 0; i < m_nStringQuantity; i++)
-            if (m_psStrName[i] != nullptr)
-                delete m_psStrName[i];
-        delete m_psStrName;
-        m_psStrName = nullptr;
-    }
-    if (m_psString != nullptr)
-    {
-        for (i = 0; i < m_nStringQuantity; i++)
-            if (m_psString[i] != nullptr)
-                delete m_psString[i];
-        delete m_psString;
-        m_psString = nullptr;
-    }
+
+    for (i = 0; i < m_nStringQuantity; i++)
+        if (m_psStrName[i] != nullptr)
+            delete m_psStrName[i];
+
+
+    for (i = 0; i < m_nStringQuantity; i++)
+        if (m_psString[i] != nullptr)
+            delete m_psString[i];
+
     STORM_DELETE(m_sIniFileName);
     STORM_DELETE(m_sLanguage);
     STORM_DELETE(m_sLanguageDir);
@@ -292,95 +284,25 @@ void STRSERVICE::SetLanguage(const char *sLanguage)
     //====================================================================
 
     // delete old stringes
-    if (m_psString != nullptr)
-    {
-        for (i = 0; i < m_nStringQuantity; i++)
-            delete m_psString[i];
-        delete m_psString;
-        m_psString = nullptr;
-    }
-    if (m_psStrName != nullptr)
-    {
-        for (i = 0; i < m_nStringQuantity; i++)
-            delete m_psStrName[i];
-        delete m_psStrName;
-        m_psStrName = nullptr;
-    }
 
+     for (i = 0; i < m_nStringQuantity; i++)
+         delete m_psString[i];
+     m_psString.clear();
+
+     for (i = 0; i < m_nStringQuantity; i++)
+         delete m_psStrName[i];
+     m_psStrName.clear();
+
+
+     m_nStringQuantity = 0;
     // initialize ini file
-    sprintf_s(param, "resource\\ini\\texts\\%s\\%s", m_sLanguageDir, m_sIniFileName);
-    auto ini = fio->OpenIniFile(param);
-    if (!ini)
+
+    m_sFilesLoaded.clear();
+    LoadCommonIniFileImpl(m_sIniFileName);
+    for (i = 0; i < m_sFilesToReload.size(); i++)
     {
-        core.Trace("WARNING! ini file \"%s\" not found!", param);
-        return;
+        LoadCommonIniFileImpl(m_sFilesToReload[i]);
     }
-
-    // get string quantity
-    auto newSize = 0;
-    if (ini->ReadString(nullptr, "string", param, sizeof(param) - 1, ""))
-        do
-        {
-            newSize++;
-        } while (ini->ReadStringNext(nullptr, "string", param, sizeof(param) - 1));
-
-    // check to right of ini files
-    if (newSize != m_nStringQuantity && m_nStringQuantity != 0)
-        core.Trace("WARNING: language %s ini file has different size", sLanguage);
-    m_nStringQuantity = newSize;
-
-    // create strings & string names arreys
-    if (newSize > 0)
-    {
-        m_psString = new char *[newSize];
-        m_psStrName = new char *[newSize];
-        if (m_psStrName == nullptr || m_psString == nullptr)
-            throw std::runtime_error("Allocate memory error");
-    }
-    else
-    {
-        m_psString = nullptr;
-        m_psStrName = nullptr;
-    }
-
-    // fill stringes
-    char strName[sizeof(param)];
-    char string[sizeof(param)];
-    ini->ReadString(nullptr, "string", param, sizeof(param) - 1, "");
-    for (i = 0; i < m_nStringQuantity; i++)
-    {
-        if (GetStringDescribe(param, strName, string))
-        {
-            // fill string name
-            auto len = strlen(param) + 1;
-            m_psStrName[i] = new char[len];
-            if (m_psStrName[i] == nullptr)
-                throw std::runtime_error("allocate memory error");
-            strcpy_s(m_psStrName[i], len, strName);
-
-            // fill string self
-            len = strlen(string) + 1;
-            m_psString[i] = new char[len];
-            if (m_psString[i] == nullptr)
-            {
-                delete m_psStrName[i];
-                throw std::runtime_error("allocate memory error");
-            }
-            memcpy(m_psString[i], string, len);
-        }
-        else
-        {
-            // invalid string
-            m_psStrName[i] = nullptr;
-            m_psString[i] = nullptr;
-        }
-
-        // next string
-        ini->ReadStringNext(nullptr, "string", param, sizeof(param) - 1);
-    }
-
-    // end of search
-
     // =======================================================================
     // Re-reading user files
     // =======================================================================
@@ -452,6 +374,100 @@ void STRSERVICE::SetLanguage(const char *sLanguage)
 
     // UNGUARD
 }
+
+void STRSERVICE::LoadCommonIniFile(const std::string &sFileName)
+{
+
+    if (std::find(m_sFilesToReload.begin(), m_sFilesToReload.end(), sFileName) == m_sFilesToReload.end())
+    {
+        m_sFilesToReload.push_back(sFileName);
+    }
+    LoadCommonIniFileImpl(sFileName);
+}
+
+void STRSERVICE::LoadCommonIniFileImpl(const std::string &sFileName)
+{
+    if (m_sFilesLoaded.contains(sFileName))
+    {
+        return;
+    }
+    m_sFilesLoaded.insert(sFileName);
+
+    auto newSize = 0;
+    auto oldStringQuantity = m_nStringQuantity;
+    char param[2048];
+    int i = 0;
+    sprintf_s(param, "resource\\ini\\texts\\%s\\%s", m_sLanguageDir, sFileName.c_str());
+    auto ini = fio->OpenIniFile(param);
+    if (!ini)
+    {
+        core.Trace("WARNING! ini file \"%s\" not found!", sFileName.c_str());
+        return;
+    }
+
+    // get string quantity
+    
+    if (ini->ReadString(nullptr, "string", param, sizeof(param) - 1, ""))
+        do
+        {
+            newSize++;
+        } while (ini->ReadStringNext(nullptr, "string", param, sizeof(param) - 1));
+
+    
+    m_nStringQuantity = newSize + oldStringQuantity;
+
+    // create strings & string names arreys
+    if (m_nStringQuantity > m_psString.size())
+    {
+        m_psString.resize(m_nStringQuantity);
+    }
+
+    if (m_nStringQuantity > m_psStrName.size())
+    {
+        m_psStrName.resize(m_nStringQuantity);
+    }
+
+    // fill stringes
+    char strName[sizeof(param)];
+    char string[sizeof(param)];
+    ini->ReadString(nullptr, "string", param, sizeof(param) - 1, "");
+
+    for (i = oldStringQuantity; i < m_nStringQuantity; i++)
+    {
+        if (GetStringDescribe(param, strName, string))
+        {
+            // fill string name
+            auto len = strlen(param) + 1;
+            m_psStrName[i] = new char[len];
+            if (m_psStrName[i] == nullptr)
+                throw std::runtime_error("allocate memory error");
+            strcpy_s(m_psStrName[i], len, strName);
+
+            // fill string self
+            len = strlen(string) + 1;
+            m_psString[i] = new char[len];
+            if (m_psString[i] == nullptr)
+            {
+                delete m_psStrName[i];
+                throw std::runtime_error("allocate memory error");
+            }
+            memcpy(m_psString[i], string, len);
+        }
+        else
+        {
+            // invalid string
+            m_psStrName[i] = nullptr;
+            m_psString[i] = nullptr;
+        }
+
+        // next string
+        ini->ReadStringNext(nullptr, "string", param, sizeof(param) - 1);
+    }
+
+    // end of search
+}
+
+
 
 char *STRSERVICE::GetLanguage()
 {

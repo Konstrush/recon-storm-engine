@@ -120,6 +120,7 @@ class BISignIcon
         float fStarProgress;
         FRECT rFaceUV;
         std::string sText;
+        int32_t nTextureID;
     } m_Sign[MAX_SIGN_QUANTITY];
 
     int32_t m_nMaxSquareQ;
