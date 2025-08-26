@@ -477,6 +477,20 @@ bool Location::CheckIfLocatorExists(const char *lName)
     return false;
 }
 
+static size_t locationNameToTechIndex(const char *name)
+{
+    if (!name)
+        return 0;
+
+    const char *metalPrefix = "metal_";
+    if (!strncmp(metalPrefix, name, strlen(metalPrefix)))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 int32_t Location::LoadStaticModel(const char *modelName, const char *tech, int32_t level, bool useDynamicLights)
 {
     lights = static_cast<Lights *>(core.GetEntityPointer(lightsid));
@@ -496,6 +510,9 @@ int32_t Location::LoadStaticModel(const char *modelName, const char *tech, int32
         model.DeleteModel(im);
         return -1;
     }
+
+    node->SetTechniqueIndexesRec(locationNameToTechIndex);
+    node->SetTechniqueRec("EnvAmmoShader", 1); // for metal
     auto *const g = node->geo;
     if (!g)
     {

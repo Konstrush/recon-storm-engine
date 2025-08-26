@@ -570,6 +570,15 @@ void NODER::SetTechnique(const char *name, size_t index)
     strcpy_s(techniques[index], name);
 }
 
+void NODER::SetTechniqueRec(const char *name, size_t index)
+{
+    if (index >= TECHNIQUES_COUNT)
+        return;
+    SetTechnique(name, index);
+    for (auto &n : next)
+        n->SetTechniqueRec(name, index);
+}
+
 //-------------------------------------------------------------------
 //
 //-------------------------------------------------------------------

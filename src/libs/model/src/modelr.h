@@ -57,6 +57,7 @@ class NODER : public NODE
     void Link(entid_t model, bool transform = true) override;
 
     void SetTechnique(const char *name, size_t index = 0) override;
+    void SetTechniqueRec(const char *name, size_t index = 0) override;
     const char *GetTechnique(size_t index = 0) override;
     
     // replace only this node model without touching anything else

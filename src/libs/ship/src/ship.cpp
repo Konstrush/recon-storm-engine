@@ -1424,6 +1424,20 @@ void SHIP::LoadPositionFromAttributes()
     RecalculateWorldOffset();
 }
 
+static size_t shipNameToTechIndex(const char *name)
+{
+    if (!name)
+        return 0;
+
+    const char *metalPrefix = "metal_";
+    if (!strncmp(metalPrefix, name, strlen(metalPrefix)))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 bool SHIP::Mount(ATTRIBUTES *_pAShip)
 {
     Assert(_pAShip);
@@ -1530,6 +1544,8 @@ bool SHIP::Mount(ATTRIBUTES *_pAShip)
     Assert(pModel);
     NODE *pNode = pModel->GetNode(0);
     Assert(pNode);
+    pNode->SetTechniqueIndexesRec(shipNameToTechIndex);
+    pNode->SetTechniqueRec("EnvAmmoShader", 1);
     pNode->geo->GetInfo(ginfo);
 
     CalcRealBoxsize();

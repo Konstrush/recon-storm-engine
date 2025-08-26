@@ -46,6 +46,7 @@ class NODE
     virtual void Link(entid_t model, bool transform = true) = 0;
 
     virtual void SetTechnique(const char *name, size_t index = 0) = 0;
+    virtual void SetTechniqueRec(const char *name, size_t index = 0) = 0;
     virtual const char *GetTechnique(size_t index = 0) = 0;
     virtual bool Init(const char *lightPath, const char *pname, const char *oname, const CMatrix &m,
                       const CMatrix &globm, NODER *par, const char *lmPath) = 0;
@@ -58,6 +59,16 @@ class NODE
     {
         if (geo)
             geo->SetTechniques(ntt);
+    }
+
+    void SetTechniqueIndexesRec(NameToTechniqueFunc ntt)
+    {
+        SetTechniqueIndexes(ntt);
+        for (auto& cur : next)
+        {
+            if (cur)
+                cur->SetTechniqueIndexesRec(ntt);
+        }
     }
 };
 
