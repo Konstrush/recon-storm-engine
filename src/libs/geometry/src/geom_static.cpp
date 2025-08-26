@@ -142,6 +142,7 @@ GEOM::GEOM(const char *fname, const char *lightname, GEOM_SERVICE &_srv, int32_t
         object[o].vertex_buff = obj[o].vertex_buff;
         object[o].start_vertex = obj[o].svertex;
         object[o].num_vertices = obj[o].nvertices;
+        object[o].technology_index = 0;
         atriangles[o] = obj[o].atriangles;
     }
     srv.free(obj);
@@ -292,8 +293,11 @@ void GEOM::Draw(const PLANE *pl, int32_t np, MATERIAL_FUNC mtf) const
         srv.SetMaterial(material[object[o].material]);
         if (mtf != nullptr)
             mtf(material[object[o].material]);
+
+        size_t iTechIndex = object[o].technology_index;
+
         srv.DrawIndexedPrimitive(object[o].start_vertex, object[o].num_vertices, vb->stride, object[o].striangle * 3,
-                                 object[o].ntriangles);
+                                 object[o].ntriangles, iTechIndex);
     }
 }
 
@@ -386,6 +390,15 @@ void GEOM::GetObj(int32_t o, OBJECT &ob) const
     ob = object[o];
     ob.vertex_buff = vbuff[object[o].vertex_buff].dev_buff;
 }
+
+void GEOM::SetTechniques(NameToTechniqueFunc ntt)
+{
+    for (int32_t o = 0; o < rhead.nobjects; o++)
+    {
+        object[o].technology_index = ntt(object[o].name);
+    }
+}
+
 
 void GEOM::GetInfo(INFO &i) const
 {

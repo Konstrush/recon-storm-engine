@@ -214,7 +214,7 @@ void BLAST::Realize(uint32_t Delta_Time)
 
     ProcessTime(Delta_Time);
 
-    gs->SetTechnique("");
+    gs->SetTechnique("", 0);
     for (n = 0; n < ItemsNum; n++)
     {
         if (Item[n].geo)

@@ -75,6 +75,7 @@ class GEOM : public GEOS
     virtual int32_t FindObjG(int32_t start_index, int32_t group_name_id);
     virtual void GetObj(int32_t o, OBJECT &ob) const;
     virtual void SetObj(int32_t o, const OBJECT &ob);
+    virtual void SetTechniques(NameToTechniqueFunc);
 
     virtual int32_t FindMaterialN(int32_t start_index, int32_t name_id);
     virtual int32_t FindMaterialG(int32_t start_index, int32_t group_name_id);

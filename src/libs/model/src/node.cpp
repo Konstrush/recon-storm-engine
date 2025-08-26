@@ -180,7 +180,7 @@ bool NODER::Init(const char *lightPath, const char *pname, const char *oname, co
 {
     isReleased = false;
     name[0] = 0;
-    technique[0] = 0;
+    memset(techniques, 0, sizeof(techniques));
     geoMaterialFunc = nullptr;
     flags = VISIBLE | VISIBLE_TREE | CLIP_ENABLE | CLIP_ENABLE_TREE | TRACE_ENABLE | TRACE_ENABLE_TREE;
 
@@ -394,10 +394,10 @@ void NODER::Draw()
         if (p == 4)
         {
             rs->SetTransform(D3DTS_WORLD, (D3DMATRIX *)&glob_mtx);
-            gs->SetTechnique(&technique[0]);
+            gs->SetTechniques(techniques);
             if (max_view_dist > 0.f && distance_blend > 0.f)
             {
-                gs->SetTechnique("geomdistanceblend");
+                gs->SetTechnique("geomdistanceblend", 0);
                 uint32_t dwTFColor;
                 dwTFColor = (static_cast<uint32_t>(255.f - 255.f * distance_blend) << 24) | 0xFFFFFF;
                 rs->SetRenderState(D3DRS_TEXTUREFACTOR, dwTFColor);
@@ -563,17 +563,30 @@ void NODER::Link(entid_t id, bool transform)
 //-------------------------------------------------------------------
 //
 //-------------------------------------------------------------------
-void NODER::SetTechnique(const char *name)
+void NODER::SetTechnique(const char *name, size_t index)
 {
-    strcpy_s(technique, name);
+    if (index >= TECHNIQUES_COUNT)
+        return;
+    strcpy_s(techniques[index], name);
+}
+
+void NODER::SetTechniqueRec(const char *name, size_t index)
+{
+    if (index >= TECHNIQUES_COUNT)
+        return;
+    SetTechnique(name, index);
+    for (auto &n : next)
+        n->SetTechniqueRec(name, index);
 }
 
 //-------------------------------------------------------------------
 //
 //-------------------------------------------------------------------
-const char *NODER::GetTechnique()
+const char *NODER::GetTechnique(size_t index)
 {
-    return &technique[0];
+    if (index >= TECHNIQUES_COUNT)
+        index = 0;
+    return &techniques[index][0];
 }
 
 void NODER::SetMaxViewDist(float fDist)

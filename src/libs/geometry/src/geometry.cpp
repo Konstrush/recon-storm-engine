@@ -7,7 +7,8 @@ CREATE_SERVICE(GEOMETRY)
 
 IDirect3DVertexDeclaration9 *GEOM_SERVICE_R::vertexDecl_ = nullptr;
 
-char technique[256] = "";
+char techniques[TECHNIQUES_COUNT][256] = {0};
+
 char RenderServiceName[] = "dx9render";
 GEOM_SERVICE_R GSR;
 char texturePath[256];
@@ -34,9 +35,16 @@ void GEOMETRY::SetTexturePath(const char *path)
 //=================================================================================================
 // Block 1
 //=================================================================================================
-void GEOMETRY::SetTechnique(const char *name)
+void GEOMETRY::SetTechnique(const char *name, size_t index)
 {
-    strcpy_s(technique, name);
+    if (index >= TECHNIQUES_COUNT)
+        return;
+    strcpy_s(techniques[index], name);
+}
+
+void GEOMETRY::SetTechniques(char aTechniques[TECHNIQUES_COUNT][256])
+{
+    memcpy(techniques, aTechniques, sizeof(techniques));
 }
 
 GEOMETRY::ANIMATION_VB GEOMETRY::GetAnimationVBDesc(int32_t vb)
@@ -86,6 +94,10 @@ int vrtSize;
 
 GEOS *GEOMETRY::CreateGeometry(const char *file_name, const char *light_file_name, int32_t flags, const char *lmPath)
 {
+    if (!strcmp(file_name, "characters\\Blad_0"))
+    {
+        file_name = file_name;
+    }
     char fnt[256], lfn[256];
     if (light_file_name != nullptr)
     {
@@ -425,7 +437,8 @@ void GEOM_SERVICE_R::SetVertexBuffer(int32_t vsize, GEOS::ID vbuff)
     CurentVertexBufferSize = vsize;
 }
 
-void GEOM_SERVICE_R::DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx, int32_t numtrg)
+void GEOM_SERVICE_R::DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx, int32_t numtrg,
+                                          size_t iTechIndex)
 {
     if (!RenderService)
         return;
@@ -456,7 +469,10 @@ void GEOM_SERVICE_R::DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vr
         // float SSBias = -0.6f;
         // RenderService->SetRenderState(D3DRS_SLOPESCALEDEPTHBIAS, *(int*)&SSBias);
     }
-
+    if (iTechIndex >= TECHNIQUES_COUNT || !techniques[iTechIndex][0])
+    {
+        iTechIndex = 0;
+    }
     // draw animation
     if (transform_func != nullptr)
     {
@@ -468,8 +484,8 @@ void GEOM_SERVICE_R::DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vr
         {
             RenderService->SetStreamSource(0, transformed_vb, cavb->stride);
             RenderService->SetFVF(cavb->fvf);
-
-            RenderService->DrawBuffer(-1, cavb->stride, CurentIndexBuffer, minv, numv, startidx, numtrg, technique);
+            RenderService->DrawBuffer(-1, cavb->stride, CurentIndexBuffer, minv, numv, startidx, numtrg,
+                                      techniques[iTechIndex]);
         }
         else
         {
@@ -483,7 +499,7 @@ void GEOM_SERVICE_R::DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vr
     {
         if (!bCaustic)
             RenderService->DrawBuffer(CurentVertexBuffer, vrtsize, CurentIndexBuffer, minv, numv, startidx, numtrg,
-                                      technique);
+                                      techniques[iTechIndex]);
         else
             RenderService->DrawIndexedPrimitiveNoVShader(D3DPT_TRIANGLELIST, CurentVertexBuffer, vrtsize,
                                                          CurentIndexBuffer, minv, numv, startidx, numtrg, "caustic");
