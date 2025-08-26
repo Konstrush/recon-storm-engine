@@ -124,11 +124,11 @@ void WdmRenderModel::Render(VDX9RENDER *rs) const
     if (a >= 255.0f)
     {
         a = 255.0f;
-        wdmObjects->gs->SetTechnique(tech);
+        wdmObjects->gs->SetTechnique(tech, 0);
     }
     else
     {
-        wdmObjects->gs->SetTechnique(techa);
+        wdmObjects->gs->SetTechnique(techa, 0);
         rs->SetRenderState(D3DRS_TEXTUREFACTOR, (static_cast<int32_t>(a) << 24) | 0xffffff);
     }
     // Check for visibility
@@ -144,5 +144,5 @@ void WdmRenderModel::Render(VDX9RENDER *rs) const
             return;
     }
     geo->Draw(nullptr, 0, nullptr);
-    wdmObjects->gs->SetTechnique("");
+    wdmObjects->gs->SetTechnique("", 0);
 }

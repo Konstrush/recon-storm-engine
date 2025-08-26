@@ -330,6 +330,7 @@ void Character::RTuner::Set(MODEL *model, VDX9RENDER *rs)
         if (a >= 1.0f)
         {
             n->SetTechnique("Animation");
+            n->SetTechnique("EnvAmmoShader", 1);
         }
         else
         {
@@ -3147,6 +3148,21 @@ void Character::ReleaseSound(int32_t id)
 // Encapsulation
 // ============================================================================================
 
+
+static size_t characterNameToTechIndex(const char *name)
+{
+    if (!name)
+        return 0;
+
+    const char *metalPrefix = "metal_";
+    if (!strncmp(metalPrefix, name, strlen(metalPrefix)))
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
 bool Character::zLoadModel(MESSAGE &message)
 {
     char mpath[300];
@@ -3178,6 +3194,15 @@ bool Character::zLoadModel(MESSAGE &message)
     }
     if (gs)
         gs->SetTexturePath("");
+
+
+    auto model = Model();
+    auto node = model->GetNode(0);
+    if (node)
+    {
+        node->SetTechniqueIndexes(characterNameToTechIndex);
+    }
+
     if (!core.Send_Message(mdl, "ls", MSG_MODEL_LOAD_ANI, ani.c_str()) != 0)
     {
         core.Trace("Character animation '%s' not loaded", ani.c_str());

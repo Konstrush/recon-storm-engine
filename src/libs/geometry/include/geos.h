@@ -13,6 +13,9 @@ Import library main header
 #include <cstdint>
 #include <fstream>
 
+
+typedef size_t NameToTechniqueFunc(const char *name);
+
 class GEOS
 {
   public:
@@ -177,12 +180,14 @@ class GEOS
         ID vertex_buff;
         int32_t start_vertex, num_vertices;
         int32_t bones[4];
+        int32_t technology_index;
     };
 
     virtual int32_t FindObjN(int32_t start_index, int32_t name_id) = 0;
     virtual int32_t FindObjG(int32_t start_index, int32_t group_name_id) = 0;
     virtual void GetObj(int32_t o, OBJECT &ob) const = 0;
     virtual void SetObj(int32_t o, const OBJECT &ob) = 0;
+    virtual void SetTechniques(NameToTechniqueFunc) = 0;
 
     //-----------------------------------------
     // light sources
@@ -302,7 +307,8 @@ class GEOM_SERVICE
 
     virtual void SetIndexBuffer(GEOS::ID ibuff) = 0;
     virtual void SetVertexBuffer(int32_t vsize, GEOS::ID vbuff) = 0;
-    virtual void DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx, int32_t numtrg) = 0;
+    virtual void DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx, int32_t numtrg,
+                                      size_t iTechIndex) = 0;
 
     virtual GEOS::ID CreateLight(GEOS::LIGHT) = 0;
     virtual void ActivateLight(GEOS::ID n) = 0;

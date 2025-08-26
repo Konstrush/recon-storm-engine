@@ -18,7 +18,8 @@ class GEOMETRY final : public VGEOMETRY
     GEOS *CreateGeometry(const char *file_name, const char *light_file_name, int32_t flags, const char *lmPath);
     void DeleteGeometry(GEOS *);
     ANIMATION *LoadAnimation(const char *anim);
-    void SetTechnique(const char *name);
+    void SetTechnique(const char *name, size_t index);
+    void SetTechniques(char aTechniques[TECHNIQUES_COUNT][256]);
     void SetVBConvertFunc(VERTEX_TRANSFORM _transform_func);
     ANIMATION_VB GetAnimationVBDesc(int32_t avb);
 
@@ -64,7 +65,8 @@ class GEOM_SERVICE_R final : public GEOM_SERVICE
 
     void SetIndexBuffer(GEOS::ID ibuff);
     void SetVertexBuffer(int32_t vsize, GEOS::ID vbuff);
-    void DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx, int32_t numtrg);
+    void DrawIndexedPrimitive(int32_t minv, int32_t numv, int32_t vrtsize, int32_t startidx,
+                              int32_t numtrg, size_t iTechIndex);
 
     GEOS::ID CreateLight(const GEOS::LIGHT);
     void ActivateLight(GEOS::ID n);

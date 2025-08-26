@@ -18,7 +18,7 @@ class NODER : public NODE
 
     static int32_t depth, node;
     uintptr_t idGeoGroup; // id of "geometry" string
-    char technique[256], name[256];
+    char techniques[TECHNIQUES_COUNT][256], name[256];
 
     // local radius and center of geometry
     float geo_radius;
@@ -56,8 +56,8 @@ class NODER : public NODE
     // link model to node
     void Link(entid_t model, bool transform = true) override;
 
-    void SetTechnique(const char *name) override;
-    const char *GetTechnique() override;
+    void SetTechnique(const char *name, size_t index = 0) override;
+    const char *GetTechnique(size_t index = 0) override;
     
     // replace only this node model without touching anything else
     void SubstituteGeometry(const std::string &new_model) override;

@@ -4,6 +4,9 @@
 #include "service.h"
 #include "vma.hpp"
 
+
+constexpr size_t TECHNIQUES_COUNT = 10;
+
 class ANIMATION
 {
   public:
@@ -31,7 +34,8 @@ class VGEOMETRY : public SERVICE
                                  const char *lmPath = nullptr) = 0;
     virtual void DeleteGeometry(GEOS *) = 0;
     virtual ANIMATION *LoadAnimation(const char *anim) = 0;
-    virtual void SetTechnique(const char *name) = 0;
+    virtual void SetTechnique(const char *name, size_t index) = 0;
+    virtual void SetTechniques(char aTechniques[TECHNIQUES_COUNT][256]) = 0;
     virtual void SetVBConvertFunc(VERTEX_TRANSFORM _transform_func) = 0;
     virtual ANIMATION_VB GetAnimationVBDesc(int32_t avb) = 0;
 
